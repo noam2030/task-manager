@@ -1,7 +1,7 @@
 # Project Specification
 
 ## 1. Overview
-Task Manager is a minimal, high-efficiency web application designed to manage personal tasks. Users can create tasks, assign them a priority level (High, Medium, Low), toggle their completion status, and remove tasks. The application automatically displays all tasks sorted according to their priority level, ensuring high-priority items are addressed first. The service is containerized and designed for deployment to Google Cloud Run in the `task-manager-510913` project.
+Task Manager is a minimal, high-efficiency web application designed to manage personal tasks. Users can create tasks, assign them a priority level (High, Medium, Low), toggle their completion status, and remove tasks. The application automatically displays all tasks sorted according to their priority level, ensuring high-priority items are addressed first. All task data is persistently stored in Google Cloud Firestore when running in the cloud, guaranteeing data durability across container restarts and scaling. The service is containerized and deployed to Google Cloud Run in the `task-manager-510913` project.
 
 ## 2. Requirements
 - **Task Creation**: Users can create tasks with a title and an assigned priority (`High`, `Medium`, or `Low`).
@@ -12,8 +12,9 @@ Task Manager is a minimal, high-efficiency web application designed to manage pe
   Ties are ordered by creation timestamp in descending order (most recently created first).
 - **Task Status Toggle**: Users can mark tasks as completed or incomplete.
 - **Task Deletion**: Users can remove existing tasks.
+- **Data Persistence**: Data must persist across container restarts, instance scaling, and service redeployments using Google Cloud Firestore (Native mode), with local file/in-memory fallback for local development and test execution.
 - **Minimal Codebase**: The solution uses minimal, readable, dependency-light code without unnecessary boilerplate or heavy frameworks.
-- **Automated Testing**: Comprehensive unit and API tests verifying task sorting, creation, updating, and deletion.
+- **Automated Testing**: Comprehensive unit and API tests verifying task sorting, creation, updating, deletion, and storage abstraction.
 - **Cloud Deployment**: Containerized with Docker and deployable to Google Cloud Run under GCP project `task-manager-510913`.
 - **CI/CD Pipeline**: GitHub Actions workflows for automated testing, staging deployment on PRs, and production deployment on merge to `main`.
 
@@ -27,45 +28,49 @@ Task Manager is a minimal, high-efficiency web application designed to manage pe
     - `Medium`: Amber / Orange badge
     - `Low`: Green / Teal badge
   - Interactive checkbox to toggle completion status with strikethrough styling for completed tasks.
-  - Delete button (`✕` or trash icon) with immediate optimistic/real-time update.
+  - Delete button (`✕`) with immediate optimistic/real-time update.
   - Empty state displaying an encouraging message when no tasks are present.
 - **Responsive Design**: Fast, modern, mobile-friendly interface designed with accessible semantic HTML and CSS variables.
 
 ## 4. Architecture
-The application employs a lightweight monolithic client-server architecture:
+The application employs a lightweight monolithic client-server architecture with managed cloud persistence:
 - **Client (Frontend)**: Static HTML5, modern CSS3, and vanilla JavaScript (Fetch API) served directly by the backend.
 - **Server (Backend)**: Lightweight Node.js Express server providing RESTful JSON APIs and serving static assets.
-- **Storage**: File-backed JSON store (`data/tasks.json`) with in-memory caching to guarantee persistence while keeping runtime complexity minimal and zero-database.
+- **Persistent Storage**:
+  - Cloud: Google Cloud Firestore (Native mode) collection `tasks` for durable, serverless NoSQL persistence.
+  - Local/Test: File-backed JSON store (`data/tasks.json`) or in-memory repository when Firestore is not configured or in unit test mode.
 - **Container**: Minimal Alpine-based Docker container exposing HTTP port 8080 (standard for Cloud Run).
 - **Deployment Platform**: Google Cloud Run in project `task-manager-510913`.
 
 ```mermaid
 flowchart LR
     Browser["Browser Client (HTML/CSS/JS)"] -->|"HTTP / REST API"| CloudRun["Google Cloud Run (Node.js)"]
-    CloudRun -->|"Read / Write"| Storage["data/tasks.json (Local File Store)"]
+    CloudRun -->|"Read / Write"| Firestore["Google Cloud Firestore (tasks collection)"]
+    CloudRun -.->|"Local fallback"| LocalStore["Local JSON File Store"]
 ```
 
 ## 5. Technology Stack
 - **Language & Runtime**: Node.js 20+ (ES Modules)
 - **Web Framework**: Express 4.x (minimal web & API framework)
+- **Database & Persistence**: Google Cloud Firestore (`@google-cloud/firestore`) with local fallback
 - **Frontend**: Vanilla HTML5, CSS3, ES6 JavaScript (zero build step)
 - **Test Framework**: Node.js native test runner (`node:test`) and assertion library (`node:assert`)
 - **Containerization**: Docker (Node Alpine base image)
-- **Cloud Platform**: Google Cloud Run (Project ID: `task-manager-510913`)
+- **Cloud Platform**: Google Cloud Run & Cloud Firestore (Project ID: `task-manager-510913`)
 - **CI/CD**: GitHub Actions
 - **Version Control**: Git & GitHub repository (`task-manager`)
 
 ## 6. Backend
 - **File Structure**:
   - `server.js`: Server bootstrap, Express configuration, middleware, and route mounting.
-  - `src/taskStore.js`: Task repository handling in-memory cache, file persistence, priority sorting logic, and CRUD operations.
+  - `src/taskStore.js`: Task repository abstraction with Firestore integration, local file fallback, priority sorting logic, and CRUD operations.
   - `src/routes.js`: Express router handling HTTP endpoints with validation and error responses.
 - **Priority Ranking Algorithm**:
   - Priority weights: `High` = 1, `Medium` = 2, `Low` = 3.
   - Sorting comparator: Compare priority weight ascending; if weights are equal, sort `createdAt` descending.
-- **Data Persistence**:
-  - JSON file `data/tasks.json` created automatically on startup if missing.
-  - In-memory fallback if file system is read-only.
+- **Persistence Handling**:
+  - When `USE_FIRESTORE=true` or running on GCP Cloud Run with project ID configured: writes and reads tasks from Firestore collection `tasks`.
+  - When running locally without Firestore: persists to `data/tasks.json` or in-memory cache.
 
 ## 7. Frontend
 - **File Structure**:
@@ -124,9 +129,10 @@ All endpoints return JSON responses.
 ## 10. Configuration
 - **Port**: `PORT` environment variable (defaults to `8080`).
 - **Node Environment**: `NODE_ENV` (defaults to `production` in container, `development` locally).
-- **Data File**: `DATA_FILE_PATH` (defaults to `./data/tasks.json`).
-- **GCP Project**: `task-manager-510913`.
-- **GCP Region**: `us-central1` (default Cloud Run region).
+- **Data File**: `DATA_FILE_PATH` (defaults to `./data/tasks.json` for local fallback).
+- **GCP Project**: `task-manager-510913` / `GOOGLE_CLOUD_PROJECT`.
+- **Persistence Driver**: `USE_FIRESTORE` (`true` to force Firestore, `false` to force local store).
+- **GCP Region**: `us-central1`.
 
 ## 11. Testing
 - **Test Framework**: Node.js built-in `node:test` and `node:assert/strict`.
@@ -136,19 +142,19 @@ All endpoints return JSON responses.
   - Creation, completion toggle, and deletion flows.
   - Validation: reject invalid priority values or blank titles.
   - Health check endpoint verification.
+  - Tests run offline with zero external database dependencies.
 - **Execution**: `npm test` runs all tests cleanly with zero third-party testing dependencies.
 
 ## 12. Deployment
 - **Containerization**:
-  - Multi-stage or single lean Alpine Dockerfile using `node:20-alpine`.
+  - Alpine Dockerfile using `node:20-alpine`.
   - Non-root user `node` for security.
   - Exposes port 8080.
-- **Google Cloud Run Services**:
-  - Production Service: `task-manager`
-  - Staging Service: `task-manager-staging`
+- **Google Cloud Infrastructure**:
   - Project ID: `task-manager-510913`
-  - Region: `us-central1`
-  - Command: `gcloud run deploy task-manager --source . --project task-manager-510913 --region us-central1 --allow-unauthenticated`
+  - Cloud Firestore: Default database initialized in `us-central1`.
+  - Production Service: `task-manager` on Cloud Run.
+  - Staging Service: `task-manager-staging` on Cloud Run.
 - **GitHub Actions Workflows**:
   - `.github/workflows/ci.yml`: Runs `npm test` on all pull requests and commits to `main`.
   - `.github/workflows/deploy-staging.yml`: Deploys to `task-manager-staging` on PR.

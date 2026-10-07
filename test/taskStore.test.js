@@ -2,15 +2,14 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { TaskStore } from '../src/taskStore.js';
 
-test('TaskStore - priority-based ordering', () => {
-  // Use in-memory store by passing empty path
-  const store = new TaskStore('');
+test('TaskStore - priority-based ordering', async () => {
+  const store = new TaskStore({ filePath: '', useFirestore: false });
 
-  store.createTask({ title: 'Low priority task', priority: 'Low' });
-  store.createTask({ title: 'High priority task', priority: 'High' });
-  store.createTask({ title: 'Medium priority task', priority: 'Medium' });
+  await store.createTask({ title: 'Low priority task', priority: 'Low' });
+  await store.createTask({ title: 'High priority task', priority: 'High' });
+  await store.createTask({ title: 'Medium priority task', priority: 'Medium' });
 
-  const tasks = store.getTasks();
+  const tasks = await store.getTasks();
   assert.equal(tasks.length, 3);
   assert.equal(tasks[0].priority, 'High');
   assert.equal(tasks[0].title, 'High priority task');
@@ -21,36 +20,36 @@ test('TaskStore - priority-based ordering', () => {
 });
 
 test('TaskStore - same priority orders by newest first', async () => {
-  const store = new TaskStore('');
+  const store = new TaskStore({ filePath: '', useFirestore: false });
 
-  const first = store.createTask({ title: 'First High', priority: 'High' });
-  // Add small delay to guarantee different timestamp if needed
+  const first = await store.createTask({ title: 'First High', priority: 'High' });
   await new Promise((r) => setTimeout(r, 10));
-  const second = store.createTask({ title: 'Second High', priority: 'High' });
+  const second = await store.createTask({ title: 'Second High', priority: 'High' });
 
-  const tasks = store.getTasks();
+  const tasks = await store.getTasks();
   assert.equal(tasks[0].id, second.id);
   assert.equal(tasks[1].id, first.id);
 });
 
-test('TaskStore - validation', () => {
-  const store = new TaskStore('');
+test('TaskStore - validation', async () => {
+  const store = new TaskStore({ filePath: '', useFirestore: false });
 
-  assert.throws(() => store.createTask({ title: '', priority: 'High' }), /title is required/);
-  assert.throws(() => store.createTask({ title: 'Valid', priority: 'Urgent' }), /Priority must be High, Medium, or Low/);
+  await assert.rejects(async () => store.createTask({ title: '', priority: 'High' }), /title is required/);
+  await assert.rejects(async () => store.createTask({ title: 'Valid', priority: 'Urgent' }), /Priority must be High, Medium, or Low/);
 });
 
-test('TaskStore - update and delete', () => {
-  const store = new TaskStore('');
+test('TaskStore - update and delete', async () => {
+  const store = new TaskStore({ filePath: '', useFirestore: false });
 
-  const task = store.createTask({ title: 'Initial title', priority: 'Low' });
+  const task = await store.createTask({ title: 'Initial title', priority: 'Low' });
   assert.equal(task.completed, false);
 
-  const updated = store.updateTask(task.id, { completed: true, priority: 'High' });
+  const updated = await store.updateTask(task.id, { completed: true, priority: 'High' });
   assert.equal(updated.completed, true);
   assert.equal(updated.priority, 'High');
 
-  const deleted = store.deleteTask(task.id);
+  const deleted = await store.deleteTask(task.id);
   assert.equal(deleted, true);
-  assert.equal(store.getTasks().length, 0);
+  const tasks = await store.getTasks();
+  assert.equal(tasks.length, 0);
 });

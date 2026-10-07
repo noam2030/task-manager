@@ -8,23 +8,28 @@ export function createTaskRouter(store = defaultTaskStore) {
     res.json({ status: 'ok' });
   });
 
-  router.get('/tasks', (req, res) => {
-    res.json(store.getTasks());
+  router.get('/tasks', async (req, res) => {
+    try {
+      const tasks = await store.getTasks();
+      res.json(tasks);
+    } catch (err) {
+      res.status(500).json({ error: err.message });
+    }
   });
 
-  router.post('/tasks', (req, res) => {
+  router.post('/tasks', async (req, res) => {
     try {
       const { title, priority } = req.body || {};
-      const created = store.createTask({ title, priority });
+      const created = await store.createTask({ title, priority });
       res.status(201).json(created);
     } catch (err) {
       res.status(400).json({ error: err.message });
     }
   });
 
-  router.patch('/tasks/:id', (req, res) => {
+  router.patch('/tasks/:id', async (req, res) => {
     try {
-      const updated = store.updateTask(req.params.id, req.body || {});
+      const updated = await store.updateTask(req.params.id, req.body || {});
       if (!updated) {
         return res.status(404).json({ error: 'Task not found' });
       }
@@ -34,12 +39,16 @@ export function createTaskRouter(store = defaultTaskStore) {
     }
   });
 
-  router.delete('/tasks/:id', (req, res) => {
-    const deleted = store.deleteTask(req.params.id);
-    if (!deleted) {
-      return res.status(404).json({ error: 'Task not found' });
+  router.delete('/tasks/:id', async (req, res) => {
+    try {
+      const deleted = await store.deleteTask(req.params.id);
+      if (!deleted) {
+        return res.status(404).json({ error: 'Task not found' });
+      }
+      res.status(204).end();
+    } catch (err) {
+      res.status(500).json({ error: err.message });
     }
-    res.status(204).end();
   });
 
   return router;
