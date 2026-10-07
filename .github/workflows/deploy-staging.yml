@@ -1,0 +1,54 @@
+name: Staging Deployment
+
+on:
+  pull_request:
+    branches: [ main ]
+    types: [ opened, synchronize, reopened ]
+
+jobs:
+  test-and-deploy-staging:
+    name: Test and Deploy to Staging
+    runs-on: ubuntu-latest
+    if: github.repository == 'noam2030/task-manager'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests
+        run: npm test
+
+      - name: Authenticate to Google Cloud
+        if: env.HAS_GCP_CREDENTIALS == 'true'
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+        env:
+          HAS_GCP_CREDENTIALS: ${{ secrets.GCP_SA_KEY != '' }}
+
+      - name: Set up Cloud SDK
+        if: env.HAS_GCP_CREDENTIALS == 'true'
+        uses: google-github-actions/setup-gcloud@v2
+        env:
+          HAS_GCP_CREDENTIALS: ${{ secrets.GCP_SA_KEY != '' }}
+
+      - name: Deploy to Cloud Run Staging
+        if: env.HAS_GCP_CREDENTIALS == 'true'
+        run: |
+          gcloud run deploy task-manager-staging \
+            --source . \
+            --project task-manager-510913 \
+            --region us-central1 \
+            --allow-unauthenticated \
+            --quiet
+        env:
+          HAS_GCP_CREDENTIALS: ${{ secrets.GCP_SA_KEY != '' }}
