@@ -2,3 +2,6 @@
 2. the project on google cloud is task-manager-510913
 3. confirm
 4. i disabled billing for other project. now you can retry
+5. i want the data to be persisted
+6. confirm. (i already merged previous pull request)
+7. approved

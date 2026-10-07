@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
+import { Firestore } from '@google-cloud/firestore';
 
 const PRIORITY_ORDER = {
   High: 1,
@@ -9,10 +10,23 @@ const PRIORITY_ORDER = {
 };
 
 export class TaskStore {
-  constructor(filePath = process.env.DATA_FILE_PATH || './data/tasks.json') {
-    this.filePath = filePath;
+  constructor(options = {}) {
+    // If explicit useFirestore given, use it. Otherwise auto-detect Cloud Run or env flag
+    this.useFirestore = options.useFirestore ?? (
+      process.env.USE_FIRESTORE === 'true' ||
+      Boolean(process.env.K_SERVICE && process.env.GOOGLE_CLOUD_PROJECT)
+    );
+    this.filePath = typeof options === 'string' ? options : (options.filePath ?? (process.env.DATA_FILE_PATH || './data/tasks.json'));
     this.tasks = [];
-    this.load();
+
+    if (this.useFirestore) {
+      this.db = new Firestore({
+        projectId: process.env.GOOGLE_CLOUD_PROJECT || 'task-manager-510913',
+      });
+      this.collection = this.db.collection('tasks');
+    } else {
+      this.load();
+    }
   }
 
   load() {
@@ -36,12 +50,12 @@ export class TaskStore {
       }
       fs.writeFileSync(this.filePath, JSON.stringify(this.tasks, null, 2), 'utf-8');
     } catch {
-      // In-memory fallback if persistence fails
+      // In-memory fallback
     }
   }
 
-  getTasks() {
-    return [...this.tasks].sort((a, b) => {
+  _sortTasks(tasks) {
+    return [...tasks].sort((a, b) => {
       const weightA = PRIORITY_ORDER[a.priority] ?? 99;
       const weightB = PRIORITY_ORDER[b.priority] ?? 99;
       if (weightA !== weightB) {
@@ -51,7 +65,19 @@ export class TaskStore {
     });
   }
 
-  createTask({ title, priority = 'Medium' }) {
+  async getTasks() {
+    if (this.useFirestore) {
+      const snapshot = await this.collection.get();
+      const items = [];
+      snapshot.forEach((doc) => {
+        items.push({ id: doc.id, ...doc.data() });
+      });
+      return this._sortTasks(items);
+    }
+    return this._sortTasks(this.tasks);
+  }
+
+  async createTask({ title, priority = 'Medium' }) {
     if (!title || typeof title !== 'string' || !title.trim()) {
       throw new Error('Task title is required');
     }
@@ -70,12 +96,49 @@ export class TaskStore {
       updatedAt: now,
     };
 
+    if (this.useFirestore) {
+      await this.collection.doc(task.id).set(task);
+      return task;
+    }
+
     this.tasks.push(task);
     this.save();
     return task;
   }
 
-  updateTask(id, updates = {}) {
+  async updateTask(id, updates = {}) {
+    if (this.useFirestore) {
+      const docRef = this.collection.doc(id);
+      const snapshot = await docRef.get();
+      if (!snapshot.exists) return null;
+
+      const existing = snapshot.data();
+      const cleanUpdates = {};
+
+      if (updates.title !== undefined) {
+        if (typeof updates.title !== 'string' || !updates.title.trim()) {
+          throw new Error('Task title cannot be empty');
+        }
+        cleanUpdates.title = updates.title.trim();
+      }
+
+      if (updates.priority !== undefined) {
+        const cleanPriority = String(updates.priority).trim();
+        if (!PRIORITY_ORDER[cleanPriority]) {
+          throw new Error('Priority must be High, Medium, or Low');
+        }
+        cleanUpdates.priority = cleanPriority;
+      }
+
+      if (updates.completed !== undefined) {
+        cleanUpdates.completed = Boolean(updates.completed);
+      }
+
+      cleanUpdates.updatedAt = new Date().toISOString();
+      await docRef.update(cleanUpdates);
+      return { id, ...existing, ...cleanUpdates };
+    }
+
     const task = this.tasks.find((t) => t.id === id);
     if (!task) return null;
 
@@ -103,7 +166,15 @@ export class TaskStore {
     return task;
   }
 
-  deleteTask(id) {
+  async deleteTask(id) {
+    if (this.useFirestore) {
+      const docRef = this.collection.doc(id);
+      const snapshot = await docRef.get();
+      if (!snapshot.exists) return false;
+      await docRef.delete();
+      return true;
+    }
+
     const initialLength = this.tasks.length;
     this.tasks = this.tasks.filter((t) => t.id !== id);
     if (this.tasks.length !== initialLength) {

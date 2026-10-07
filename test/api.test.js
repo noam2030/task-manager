@@ -4,7 +4,7 @@ import { createApp } from '../server.js';
 import { TaskStore } from '../src/taskStore.js';
 
 function startTestServer() {
-  const store = new TaskStore('');
+  const store = new TaskStore({ filePath: '', useFirestore: false });
   const app = createApp(store);
   return new Promise((resolve) => {
     const server = app.listen(0, () => {
