@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Task Manager</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="container">
+    <header class="app-header">
+      <div class="header-content">
+        <h1>Task Manager</h1>
+        <p class="subtitle">Prioritize and organize your daily work</p>
+      </div>
+      <div class="stats-bar" id="statsBar">
+        <span class="stat-pill"><strong id="totalCount">0</strong> tasks</span>
+        <span class="stat-pill"><strong id="pendingCount">0</strong> pending</span>
+        <span class="stat-pill"><strong id="completedCount">0</strong> completed</span>
+      </div>
+    </header>
+
+    <main>
+      <section class="task-form-card">
+        <form id="taskForm" class="task-form" autocomplete="off">
+          <div class="input-group">
+            <label for="taskTitle" class="visually-hidden">Task title</label>
+            <input
+              type="text"
+              id="taskTitle"
+              name="title"
+              placeholder="What needs to be done?"
+              required
+              maxlength="200"
+            />
+          </div>
+
+          <div class="priority-group">
+            <label for="taskPriority" class="visually-hidden">Priority</label>
+            <select id="taskPriority" name="priority" required>
+              <option value="High">Priority: High</option>
+              <option value="Medium" selected>Priority: Medium</option>
+              <option value="Low">Priority: Low</option>
+            </select>
+          </div>
+
+          <button type="submit" class="btn btn-primary" id="submitBtn">
+            Add Task
+          </button>
+        </form>
+      </section>
+
+      <section class="task-list-section">
+        <div class="section-header">
+          <h2>Tasks Sorted by Priority</h2>
+          <span class="legend">
+            <span class="legend-badge badge-high">High</span>
+            <span class="legend-badge badge-medium">Medium</span>
+            <span class="legend-badge badge-low">Low</span>
+          </span>
+        </div>
+
+        <ul class="task-list" id="taskList" aria-live="polite">
+          <!-- Tasks dynamically rendered here -->
+        </ul>
+
+        <div class="empty-state" id="emptyState" hidden>
+          <div class="empty-icon">✓</div>
+          <p class="empty-title">All tasks done!</p>
+          <p class="empty-sub">Add a new task above with its priority to get started.</p>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
