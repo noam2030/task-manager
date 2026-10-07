@@ -1,0 +1,3 @@
+1. Follow the development-workflow skill. implement task manager web application. minimal code. the app will manage user tasks. the user will create task and set its priority. the list will show tasks accroding to thier priority. it should be deployed to google cloud. create github project with the name of the this directory.
+2. the project on google cloud is task-manager-510913
+3. confirm
