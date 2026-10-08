@@ -261,12 +261,24 @@ body {
   margin-left: 0.75rem;
 }
 
-.priority-badge {
+.priority-badge,
+.priority-select {
   font-size: 0.75rem;
   font-weight: 600;
-  padding: 0.2rem 0.6rem;
+  padding: 0.25rem 0.6rem;
   border-radius: 999px;
   letter-spacing: 0.02em;
+}
+
+.priority-select {
+  cursor: pointer;
+  outline: none;
+  appearance: auto;
+  transition: transform 0.1s, box-shadow 0.1s;
+}
+
+.priority-select:focus {
+  box-shadow: 0 0 0 2px var(--focus-ring);
 }
 
 .delete-btn {

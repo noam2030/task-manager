@@ -1,20 +1,21 @@
 # Project Specification
 
 ## 1. Overview
-Task Manager is a minimal, high-efficiency web application designed to manage personal tasks. Users can create tasks, assign them a priority level (High, Medium, Low), toggle their completion status, and remove tasks. The application automatically displays all tasks sorted according to their priority level, ensuring high-priority items are addressed first. All task data is persistently stored in Google Cloud Firestore when running in the cloud, guaranteeing data durability across container restarts and scaling. The service is containerized and deployed to Google Cloud Run in the `task-manager-510913` project.
+Task Manager is a minimal, high-efficiency web application designed to manage personal tasks. Users can create tasks, assign them an initial priority level (High, Medium, Low), edit or update the priority of any existing task at any time, toggle completion status, and remove tasks. The application automatically displays all tasks sorted according to their priority level, ensuring high-priority items are addressed first. All task data is persistently stored in Google Cloud Firestore when running in the cloud, guaranteeing data durability across container restarts and scaling. The service is containerized and deployed to Google Cloud Run in the `task-manager-510913` project.
 
 ## 2. Requirements
 - **Task Creation**: Users can create tasks with a title and an assigned priority (`High`, `Medium`, or `Low`).
+- **Priority Modification**: Users can change the priority level (`High`, `Medium`, or `Low`) of any existing task directly from the task list.
 - **Priority-Based Sorting**: The task list must always be ordered primarily by priority level:
   1. `High` (highest priority)
   2. `Medium`
   3. `Low` (lowest priority)
-  Ties are ordered by creation timestamp in descending order (most recently created first).
+  Ties are ordered by creation timestamp in descending order (most recently created first). When a task's priority is modified, the list automatically updates to reflect the new sorting order.
 - **Task Status Toggle**: Users can mark tasks as completed or incomplete.
 - **Task Deletion**: Users can remove existing tasks.
 - **Data Persistence**: Data must persist across container restarts, instance scaling, and service redeployments using Google Cloud Firestore (Native mode), with local file/in-memory fallback for local development and test execution.
 - **Minimal Codebase**: The solution uses minimal, readable, dependency-light code without unnecessary boilerplate or heavy frameworks.
-- **Automated Testing**: Comprehensive unit and API tests verifying task sorting, creation, updating, deletion, and storage abstraction.
+- **Automated Testing**: Comprehensive unit and API tests verifying task sorting, creation, priority editing, updating, deletion, and storage abstraction.
 - **Cloud Deployment**: Containerized with Docker and deployable to Google Cloud Run under GCP project `task-manager-510913`.
 - **CI/CD Pipeline**: GitHub Actions workflows for automated testing, staging deployment on PRs, and production deployment on merge to `main`.
 
@@ -23,10 +24,11 @@ Task Manager is a minimal, high-efficiency web application designed to manage pe
 - **Input Form**: Single-line form with an input for task title, a priority select dropdown (`High`, `Medium`, `Low`), and an "Add Task" button.
 - **Task List View**:
   - Displays tasks sorted by priority (`High` -> `Medium` -> `Low`).
-  - Visual badges indicating priority level:
+  - Interactive priority selector badge on each task item allowing instantaneous switching between `High`, `Medium`, and `Low` with corresponding badge styling:
     - `High`: Red / Coral badge
     - `Medium`: Amber / Orange badge
     - `Low`: Green / Teal badge
+  - Immediate re-sorting of the task list upon priority change so reprioritized tasks shift to their correct sorted position.
   - Interactive checkbox to toggle completion status with strikethrough styling for completed tasks.
   - Delete button (`✕`) with immediate optimistic/real-time update.
   - Empty state displaying an encouraging message when no tasks are present.
@@ -78,8 +80,8 @@ flowchart LR
 - **File Structure**:
   - `public/index.html`: Accessible semantic markup with task form, priority selector, and task list container.
   - `public/style.css`: Modern, clean CSS using CSS custom properties (variables), Flexbox, responsive layout.
-  - `public/app.js`: Client-side logic handling form submission, calling `/api/tasks`, rendering cards, and handling updates/deletions.
-- **State Handling**: Fetches task list from `/api/tasks` on page load, and after any mutation (create, complete, delete) re-renders the sorted list.
+  - `public/app.js`: Client-side logic handling form submission, priority changing, calling `/api/tasks`, rendering cards, and handling updates/deletions.
+- **State Handling**: Fetches task list from `/api/tasks` on page load, and after any mutation (create, complete, priority change, delete) re-renders the sorted list.
 
 ## 8. Data Model
 ### Task Entity Schema
@@ -111,14 +113,15 @@ All endpoints return JSON responses.
    - Response `201 Created`: Created task object.
    - Response `400 Bad Request`: Validation error if `title` is missing/empty or `priority` is not in `['High', 'Medium', 'Low']`.
 3. `PATCH /api/tasks/:id`
-   - Description: Updates a task's `completed` status or `priority` or `title`.
+   - Description: Updates a task's `completed` status or `priority` (`High`, `Medium`, `Low`) or `title`.
    - Request Body:
      ```json
      {
-       "completed": true
+       "priority": "High"
      }
      ```
    - Response `200 OK`: Updated task object.
+   - Response `400 Bad Request`: Validation error if `priority` is not valid.
    - Response `404 Not Found`: If task ID does not exist.
 4. `DELETE /api/tasks/:id`
    - Description: Deletes a task by ID.
@@ -140,6 +143,7 @@ All endpoints return JSON responses.
 - **Test Framework**: Node.js built-in `node:test` and `node:assert/strict`.
 - **Unit & Integration Test Suite** (`test/taskStore.test.js`, `test/api.test.js`):
   - Verification of priority ordering: `High` appears before `Medium`, `Medium` appears before `Low`.
+  - Verification of priority modification: changing a task's priority (e.g., `Low` to `High`) moves it to the correct sorted position.
   - Secondary sorting: equal priority sorted newest first.
   - Creation, completion toggle, and deletion flows.
   - Validation: reject invalid priority values or blank titles.

@@ -8,3 +8,5 @@
 8. i dont see my tasks on firestore. they are not saved
 9. confirm
 10. merge
+11. add an option to chang the priority of a task
+12. confirm

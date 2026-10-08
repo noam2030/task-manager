@@ -57,7 +57,15 @@ function renderTasks(tasks) {
         <span class="task-title">${escapeHtml(task.title)}</span>
       </div>
       <div class="task-right">
-        <span class="priority-badge ${priorityClass}">${escapeHtml(task.priority)}</span>
+        <select
+          class="priority-select ${priorityClass}"
+          aria-label="Change priority for task '${escapeHtml(task.title)}'"
+          title="Change priority"
+        >
+          <option value="High" ${task.priority === 'High' ? 'selected' : ''}>High</option>
+          <option value="Medium" ${task.priority === 'Medium' ? 'selected' : ''}>Medium</option>
+          <option value="Low" ${task.priority === 'Low' ? 'selected' : ''}>Low</option>
+        </select>
         <button
           type="button"
           class="delete-btn"
@@ -66,6 +74,12 @@ function renderTasks(tasks) {
         >✕</button>
       </div>
     `;
+
+    // Priority change listener
+    const prioritySelect = li.querySelector('.priority-select');
+    prioritySelect.addEventListener('change', async () => {
+      await updateTaskPriority(task.id, prioritySelect.value);
+    });
 
     // Toggle complete listener
     const checkbox = li.querySelector('.task-checkbox');
@@ -103,6 +117,21 @@ async function createTask(title, priority) {
     await fetchTasks();
   } catch (err) {
     alert(err.message);
+  }
+}
+
+async function updateTaskPriority(id, priority) {
+  try {
+    const res = await fetch(`/api/tasks/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ priority }),
+    });
+    if (!res.ok) throw new Error('Failed to update task priority');
+    await fetchTasks();
+  } catch (err) {
+    console.error('Error updating task priority:', err);
+    await fetchTasks();
   }
 }
 
