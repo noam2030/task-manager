@@ -53,3 +53,23 @@ test('TaskStore - update and delete', async () => {
   const tasks = await store.getTasks();
   assert.equal(tasks.length, 0);
 });
+
+test('TaskStore - modifying priority re-sorts tasks', async () => {
+  const store = new TaskStore({ filePath: '', useFirestore: false });
+
+  const lowTask = await store.createTask({ title: 'Originally Low', priority: 'Low' });
+  const medTask = await store.createTask({ title: 'Medium Task', priority: 'Medium' });
+
+  let tasks = await store.getTasks();
+  assert.equal(tasks[0].id, medTask.id);
+  assert.equal(tasks[1].id, lowTask.id);
+
+  // Upgrade Low to High
+  await store.updateTask(lowTask.id, { priority: 'High' });
+
+  tasks = await store.getTasks();
+  assert.equal(tasks[0].id, lowTask.id);
+  assert.equal(tasks[0].priority, 'High');
+  assert.equal(tasks[1].id, medTask.id);
+});
+
