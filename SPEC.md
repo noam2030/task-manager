@@ -27,6 +27,7 @@ Task Manager is a minimal, high-efficiency web application designed to manage pe
 - **Minimal Codebase**: The solution uses minimal, readable, dependency-light code without unnecessary boilerplate or heavy frameworks.
 - **Automated Testing**: Comprehensive unit and API tests verifying user data isolation, task sorting, creation, priority editing, completion toggling, deletion, and storage abstraction.
 - **CI/CD Pipeline**: GitHub Actions workflows for automated testing and deployments.
+- **Project Documentation**: Top-level `README.md` providing project overview, feature summary, quick start guide, and direct links to the production website.
 
 ## 3. User Experience
 - **Header & User Profile**: Clean header displaying the application title, the active user badge (e.g. `👤 noam`), a `"Switch User"` button, and a task count summary (total, pending, completed).
@@ -160,6 +161,7 @@ All endpoints accept user identification via `X-User-Id` header or `?userId=<use
 - **Node Environment**: `NODE_ENV` (defaults to `production` in container, `development` locally).
 - **Data File**: `DATA_FILE_PATH` (defaults to `./data/tasks.json` for local fallback).
 - **GCP Project**: `task-manager-510913` (defaults in code and set via `GOOGLE_CLOUD_PROJECT`).
+- **Production Frontend URL**: `https://task-manager-ui-gamma-blond.vercel.app`.
 - **Production Backend URL**: `https://task-manager-608477010863.us-central1.run.app`.
 - **Staging Backend URL**: `https://task-manager-staging-608477010863.us-central1.run.app`.
 - **Vercel Project Name**: `task-manager-ui`.
@@ -181,6 +183,7 @@ All endpoints accept user identification via `X-User-Id` header or `?userId=<use
 - **Frontend Deployment (Vercel)**:
   - Project: `task-manager-ui`
   - Output / Static Directory: `public`
+  - Production URL: `https://task-manager-ui-gamma-blond.vercel.app`
   - Config: `vercel.json` with API proxy rewrites to Cloud Run backend.
 - **Backend Deployment (Google Cloud Run)**:
   - Project ID: `task-manager-510913`
