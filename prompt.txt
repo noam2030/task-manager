@@ -11,3 +11,6 @@
 11. add an option to chang the priority of a task
 12. confirm
 13. merge
+14. i want that the front end will be deployed to vercel. create new project with the name of this project plus ui.
+15. i meant to create new project in vercel. to deploy the ui part to vercel. in this project make the ui part deploy to vercel. connect vercel to the google cloud service
+16. confirm

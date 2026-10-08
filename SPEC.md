@@ -1,7 +1,7 @@
 # Project Specification
 
 ## 1. Overview
-Task Manager is a minimal, high-efficiency web application designed to manage personal tasks. Users can create tasks, assign them an initial priority level (High, Medium, Low), edit or update the priority of any existing task at any time, toggle completion status, and remove tasks. The application automatically displays all tasks sorted according to their priority level, ensuring high-priority items are addressed first. All task data is persistently stored in Google Cloud Firestore when running in the cloud, guaranteeing data durability across container restarts and scaling. The service is containerized and deployed to Google Cloud Run in the `task-manager-510913` project.
+Task Manager is a minimal, high-efficiency web application designed to manage personal tasks. Users can create tasks, assign them an initial priority level (High, Medium, Low), edit or update the priority of any existing task at any time, toggle completion status, and remove tasks. The application automatically displays all tasks sorted according to their priority level, ensuring high-priority items are addressed first. The architecture is decoupled: the frontend UI is deployed to **Vercel** under the project **`task-manager-ui`**, while the backend REST API runs on **Google Cloud Run** in project `task-manager-510913` with persistent storage in **Google Cloud Firestore**.
 
 ## 2. Requirements
 - **Task Creation**: Users can create tasks with a title and an assigned priority (`High`, `Medium`, or `Low`).
@@ -13,11 +13,12 @@ Task Manager is a minimal, high-efficiency web application designed to manage pe
   Ties are ordered by creation timestamp in descending order (most recently created first). When a task's priority is modified, the list automatically updates to reflect the new sorting order.
 - **Task Status Toggle**: Users can mark tasks as completed or incomplete.
 - **Task Deletion**: Users can remove existing tasks.
-- **Data Persistence**: Data must persist across container restarts, instance scaling, and service redeployments using Google Cloud Firestore (Native mode), with local file/in-memory fallback for local development and test execution.
+- **Decoupled Frontend Deployment**: The UI part of the application is deployed to Vercel as project `task-manager-ui`.
+- **Backend Cloud Deployment & Persistence**: The backend API is deployed to Google Cloud Run (`task-manager-510913`) and persists task data in Google Cloud Firestore (Native mode).
+- **Vercel-to-GCP Integration**: Vercel transparently proxies `/api/*` traffic to the Google Cloud Run service, avoiding cross-origin complexities.
 - **Minimal Codebase**: The solution uses minimal, readable, dependency-light code without unnecessary boilerplate or heavy frameworks.
 - **Automated Testing**: Comprehensive unit and API tests verifying task sorting, creation, priority editing, updating, deletion, and storage abstraction.
-- **Cloud Deployment**: Containerized with Docker and deployable to Google Cloud Run under GCP project `task-manager-510913`.
-- **CI/CD Pipeline**: GitHub Actions workflows for automated testing, staging deployment on PRs, and production deployment on merge to `main`.
+- **CI/CD Pipeline**: GitHub Actions workflows for automated testing and deployments.
 
 ## 3. User Experience
 - **Header & Overview**: Clean header displaying the application title and a task count summary.
@@ -35,20 +36,18 @@ Task Manager is a minimal, high-efficiency web application designed to manage pe
 - **Responsive Design**: Fast, modern, mobile-friendly interface designed with accessible semantic HTML and CSS variables.
 
 ## 4. Architecture
-The application employs a lightweight monolithic client-server architecture with managed cloud persistence:
-- **Client (Frontend)**: Static HTML5, modern CSS3, and vanilla JavaScript (Fetch API) served directly by the backend.
-- **Server (Backend)**: Lightweight Node.js Express server providing RESTful JSON APIs and serving static assets.
-- **Persistent Storage**:
-  - Cloud: Google Cloud Firestore (Native mode) collection `tasks` for durable, serverless NoSQL persistence in project `task-manager-510913`.
-  - Local/Test: File-backed JSON store (`data/tasks.json`) or in-memory repository when Firestore is disabled or in unit test mode.
-- **Container**: Minimal Alpine-based Docker container exposing HTTP port 8080 (standard for Cloud Run).
-- **Deployment Platform**: Google Cloud Run in project `task-manager-510913`.
+The application employs a decoupled modern web architecture:
+- **Frontend (Vercel)**: Static HTML5, modern CSS3, and vanilla JavaScript hosted globally on Vercel (`task-manager-ui`).
+- **Reverse Proxy / Rewrites**: `vercel.json` rewrites `/api/*` requests to the Google Cloud Run backend.
+- **Backend (Google Cloud Run)**: Lightweight Node.js Express server providing RESTful JSON APIs with CORS support.
+- **Persistent Storage**: Google Cloud Firestore (Native mode) collection `tasks` in `task-manager-510913`.
+- **Local/Test Environment**: In-memory / file-backed JSON store (`data/tasks.json`) for local development and offline automated testing.
 
 ```mermaid
 flowchart LR
-    Browser["Browser Client (HTML/CSS/JS)"] -->|"HTTP / REST API"| CloudRun["Google Cloud Run (Node.js)"]
-    CloudRun -->|"Read / Write"| Firestore["Google Cloud Firestore (tasks collection)"]
-    CloudRun -.->|"Local fallback"| LocalStore["Local JSON File Store"]
+    Browser["User Browser"] -->|"Static Assets & /api/*"| Vercel["Vercel (task-manager-ui)"]
+    Vercel -->|"Proxy /api/*"| CloudRun["Google Cloud Run (task-manager)"]
+    CloudRun -->|"Read / Write"| Firestore["Google Cloud Firestore (tasks)"]
 ```
 
 ## 5. Technology Stack
@@ -56,17 +55,18 @@ flowchart LR
 - **Web Framework**: Express 4.x (minimal web & API framework)
 - **Database & Persistence**: Google Cloud Firestore (`@google-cloud/firestore`) with local fallback
 - **Frontend**: Vanilla HTML5, CSS3, ES6 JavaScript (zero build step)
+- **Frontend Hosting**: Vercel (Project: `task-manager-ui`)
+- **Backend Hosting**: Google Cloud Run (Project: `task-manager-510913`)
 - **Test Framework**: Node.js native test runner (`node:test`) and assertion library (`node:assert`)
 - **Containerization**: Docker (Node Alpine base image)
-- **Cloud Platform**: Google Cloud Run & Cloud Firestore (Project ID: `task-manager-510913`)
-- **CI/CD**: GitHub Actions
-- **Version Control**: Git & GitHub repository (`task-manager`)
+- **CI/CD & Version Control**: Git, GitHub repository (`task-manager`), and GitHub Actions
 
 ## 6. Backend
 - **File Structure**:
-  - `server.js`: Server bootstrap, Express configuration, middleware, and route mounting.
+  - `server.js`: Server bootstrap, CORS handling, Express configuration, middleware, and route mounting.
   - `src/taskStore.js`: Task repository abstraction with Firestore integration, local fallback, priority sorting logic, and CRUD operations.
   - `src/routes.js`: Express router handling HTTP endpoints with validation and error responses.
+- **CORS Handling**: Supports CORS headers allowing requests from Vercel deployments and local development origins.
 - **Priority Ranking Algorithm**:
   - Priority weights: `High` = 1, `Medium` = 2, `Low` = 3.
   - Sorting comparator: Compare priority weight ascending; if weights are equal, sort `createdAt` descending.
@@ -74,13 +74,13 @@ flowchart LR
   - Firestore activation triggers when `USE_FIRESTORE === 'true'`, OR when running inside Google Cloud Run (`Boolean(process.env.K_SERVICE)`), unless explicitly disabled with `options.useFirestore === false` (used by unit tests).
   - Default Firestore project ID is `task-manager-510913` (overridable via `GOOGLE_CLOUD_PROJECT`).
   - Startup logs identify storage driver (`[TaskStore] Using Firestore (project: ...)` vs `[TaskStore] Using local file/memory store`).
-  - When running locally without Firestore: persists to `data/tasks.json` or in-memory cache.
 
 ## 7. Frontend
 - **File Structure**:
   - `public/index.html`: Accessible semantic markup with task form, priority selector, and task list container.
   - `public/style.css`: Modern, clean CSS using CSS custom properties (variables), Flexbox, responsive layout.
   - `public/app.js`: Client-side logic handling form submission, priority changing, calling `/api/tasks`, rendering cards, and handling updates/deletions.
+  - `vercel.json`: Vercel project configuration linking `public/` directory and proxying `/api/*` to Cloud Run.
 - **State Handling**: Fetches task list from `/api/tasks` on page load, and after any mutation (create, complete, priority change, delete) re-renders the sorted list.
 
 ## 8. Data Model
@@ -136,7 +136,8 @@ All endpoints return JSON responses.
 - **Node Environment**: `NODE_ENV` (defaults to `production` in container, `development` locally).
 - **Data File**: `DATA_FILE_PATH` (defaults to `./data/tasks.json` for local fallback).
 - **GCP Project**: `task-manager-510913` (defaults in code and set via `GOOGLE_CLOUD_PROJECT`).
-- **Persistence Driver**: `USE_FIRESTORE` (set to `true` on Cloud Run, or detected via `K_SERVICE`).
+- **Backend API URL**: `https://task-manager-608477010863.us-central1.run.app` (routed in `vercel.json`).
+- **Vercel Project Name**: `task-manager-ui`.
 - **GCP Region**: `us-central1`.
 
 ## 11. Testing
@@ -148,19 +149,20 @@ All endpoints return JSON responses.
   - Creation, completion toggle, and deletion flows.
   - Validation: reject invalid priority values or blank titles.
   - Health check endpoint verification.
+  - CORS header verification for cross-domain requests.
   - Tests run offline with zero external database dependencies.
 - **Execution**: `npm test` runs all tests cleanly with zero third-party testing dependencies.
 
 ## 12. Deployment
-- **Containerization**:
-  - Alpine Dockerfile using `node:20-alpine`.
-  - Non-root user `node` for security.
-  - Exposes port 8080.
-- **Google Cloud Infrastructure**:
+- **Frontend Deployment (Vercel)**:
+  - Project: `task-manager-ui`
+  - Output / Static Directory: `public`
+  - Config: `vercel.json` with API proxy rewrites to Cloud Run backend.
+- **Backend Deployment (Google Cloud Run)**:
   - Project ID: `task-manager-510913`
-  - Cloud Firestore: Default database initialized in `us-central1`.
-  - Production Service: `task-manager` on Cloud Run with `--set-env-vars="USE_FIRESTORE=true,GOOGLE_CLOUD_PROJECT=task-manager-510913"`.
-  - Staging Service: `task-manager-staging` on Cloud Run with `--set-env-vars="USE_FIRESTORE=true,GOOGLE_CLOUD_PROJECT=task-manager-510913"`.
+  - Cloud Firestore: Default database in `us-central1`.
+  - Production Service: `task-manager` on Cloud Run.
+  - Staging Service: `task-manager-staging` on Cloud Run.
 - **GitHub Actions Workflows**:
   - `.github/workflows/ci.yml`: Runs `npm test` on all pull requests and commits to `main`.
   - `.github/workflows/deploy-staging.yml`: Deploys to `task-manager-staging` on PR.

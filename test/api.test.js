@@ -154,3 +154,18 @@ test('API - patch priority re-sorts tasks', async () => {
     await close();
   }
 });
+
+test('API - CORS headers are present', async () => {
+  const { baseUrl, close } = await startTestServer();
+  try {
+    const res = await fetch(`${baseUrl}/api/health`, {
+      method: 'OPTIONS',
+    });
+    assert.equal(res.status, 204);
+    assert.equal(res.headers.get('access-control-allow-origin'), '*');
+    assert.match(res.headers.get('access-control-allow-methods'), /GET/);
+  } finally {
+    await close();
+  }
+});
+
