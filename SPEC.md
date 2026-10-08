@@ -8,6 +8,14 @@ Task Manager is a minimal, high-efficiency web application designed to manage pe
 - **User Identity & Switching**: Users identify themselves by a username or identifier. The frontend allows switching users, persisting the active user in local storage.
 - **Task Creation**: Users can create tasks with a title, an optional details/notes field, and an assigned priority (`High`, `Medium`, or `Low`) within their account.
 - **Task Details (Creation, Full-Screen Viewing & Editing)**: Users can attach detailed context/notes during task creation. To keep the task list clean and compact, details are hidden from the main list items; instead, each task has a dedicated "Details" button. Clicking this button opens a full-screen view displaying the details, equipped with an "Edit Details" button allowing multi-line editing with Save/Cancel controls.
+- **Top Bar Links (GitHub & Backend API)**:
+  - The top bar provides direct links to the project's GitHub repository and the backend REST API.
+  - The GitHub link directs to `https://github.com/noam2030/task-manager` and opens in a new tab.
+  - The Backend API link dynamically points to the active environment's `/api/tasks` endpoint and opens in a new tab.
+- **Environment-Aware API Resolution (Staging vs Production)**:
+  - Staging Vercel deployments (preview domains on `*.vercel.app` or hostnames containing `staging`) strictly use the Staging Cloud Run backend: `https://task-manager-staging-608477010863.us-central1.run.app`.
+  - Production Vercel deployments (`https://task-manager-ui-gamma-blond.vercel.app`) strictly use the Production Cloud Run backend: `https://task-manager-608477010863.us-central1.run.app`.
+  - Local development environments (`localhost`, `127.0.0.1`) route to the local origin (`http://localhost:8080`).
 - **Priority Modification**: Users can change the priority level (`High`, `Medium`, or `Low`) of any existing task directly from their task list.
 - **Priority-Based Sorting**: The user's task list must always be ordered primarily by priority level:
   1. `High` (highest priority)
@@ -31,7 +39,7 @@ Task Manager is a minimal, high-efficiency web application designed to manage pe
 - **Project Documentation**: Top-level `README.md` providing project overview, feature summary, quick start guide, and direct links to the production website.
 
 ## 3. User Experience
-- **Header & User Profile**: Clean header displaying the application title, the active user badge (e.g. `👤 noam`), a `"Switch User"` button, and a task count summary (total, pending, completed).
+- **Header & Top Bar**: Clean header displaying the application title, subtitle, top-bar links to GitHub and the environment-specific Backend API, the active user badge (e.g. `👤 noam`), a `"Switch User"` button, and a task count summary (total, pending, completed).
 - **User Selection / Switch Modal**: Intuitive prompt to enter or change the active username.
 - **Input Form**: Single-line form with an input for task title, an optional details/notes field for extended context, a priority select dropdown (`High`, `Medium`, `Low`), and an "Add Task" button.
 - **Filter Controls**:
@@ -99,9 +107,9 @@ flowchart LR
 
 ## 7. Frontend
 - **File Structure**:
-  - `public/index.html`: Accessible semantic markup with user profile pill, task form, priority selector, show/hide done tasks toggle, and task list container.
-  - `public/style.css`: Modern, clean CSS using CSS custom properties (variables), Flexbox, user pill styling, responsive layout.
-  - `public/app.js`: Client-side logic managing `currentUserId`, attaching both `X-User-Id` header and `?userId=<userId>` query parameter on all requests with `cache: 'no-store'`, handling user switching, task creation, priority changing, completion toggling, filtering, rendering cards, and handling deletions. Dynamically targets staging backend `https://task-manager-staging-608477010863.us-central1.run.app` when deployed on Vercel preview domains.
+  - `public/index.html`: Accessible semantic markup with top bar external navigation links (GitHub and Backend API), user profile pill, task form, priority selector, show/hide done tasks toggle, and task list container.
+  - `public/style.css`: Modern, clean CSS using CSS custom properties (variables), Flexbox, top bar link styles, user pill styling, responsive layout.
+  - `public/app.js`: Client-side logic managing `currentUserId`, attaching both `X-User-Id` header and `?userId=<userId>` query parameter on all requests with `cache: 'no-store'`, handling user switching, task creation, priority changing, completion toggling, filtering, rendering cards, and handling deletions. Dynamically targets staging backend `https://task-manager-staging-608477010863.us-central1.run.app` when deployed on Vercel preview or staging domains, and targets production backend `https://task-manager-608477010863.us-central1.run.app` when deployed on production. Configures the top-bar Backend API link accordingly.
   - `vercel.json`: Vercel project configuration linking `public/` directory and proxying `/api/*` to the appropriate Cloud Run service.
 - **State Handling**:
   - `currentUserId`: string stored in `localStorage` (defaults to `'noam'`).
@@ -171,6 +179,7 @@ All endpoints accept user identification via `X-User-Id` header or `?userId=<use
 - **Node Environment**: `NODE_ENV` (defaults to `production` in container, `development` locally).
 - **Data File**: `DATA_FILE_PATH` (defaults to `./data/tasks.json` for local fallback).
 - **GCP Project**: `task-manager-510913` (defaults in code and set via `GOOGLE_CLOUD_PROJECT`).
+- **GitHub Repository**: `https://github.com/noam2030/task-manager`.
 - **Production Frontend URL**: `https://task-manager-ui-gamma-blond.vercel.app`.
 - **Production Backend URL**: `https://task-manager-608477010863.us-central1.run.app`.
 - **Staging Backend URL**: `https://task-manager-staging-608477010863.us-central1.run.app`.
