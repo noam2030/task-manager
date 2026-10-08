@@ -97,6 +97,50 @@
     </main>
   </div>
 
+  <!-- Full-Screen Task Details Modal -->
+  <div class="details-modal-overlay" id="detailsModal" hidden role="dialog" aria-modal="true" aria-labelledby="modalTaskTitle">
+    <div class="details-modal-container">
+      <header class="details-modal-header">
+        <div class="details-modal-meta">
+          <span class="details-modal-badge" id="modalPriorityBadge">Medium</span>
+          <span class="details-modal-status" id="modalStatusBadge">Pending</span>
+        </div>
+        <button type="button" class="btn-modal-close" id="closeModalBtn" aria-label="Close details">✕</button>
+      </header>
+
+      <h2 class="details-modal-title" id="modalTaskTitle">Task Title</h2>
+
+      <div class="details-modal-body">
+        <!-- View Mode -->
+        <div class="details-view-mode" id="detailsViewMode">
+          <div class="details-section-header">
+            <h3>Ongoing Information & Details</h3>
+            <button type="button" class="btn btn-secondary" id="editDetailsBtn">✎ Edit Details</button>
+          </div>
+          <div class="details-content-box" id="modalDetailsText"></div>
+        </div>
+
+        <!-- Edit Mode -->
+        <div class="details-edit-mode" id="detailsEditMode" hidden>
+          <div class="details-section-header">
+            <h3>Edit Details</h3>
+          </div>
+          <label for="modalDetailsTextarea" class="visually-hidden">Edit task details</label>
+          <textarea
+            id="modalDetailsTextarea"
+            class="modal-details-textarea"
+            rows="10"
+            placeholder="Add detailed notes, instructions, or ongoing information..."
+          ></textarea>
+          <div class="modal-edit-actions">
+            <button type="button" class="btn btn-primary" id="saveModalDetailsBtn">Save Details</button>
+            <button type="button" class="btn btn-secondary" id="cancelModalDetailsBtn">Cancel</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <script src="app.js"></script>
 </body>
 </html>

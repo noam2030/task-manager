@@ -33,3 +33,6 @@
 33. i dont see the details... i add details and press save, its gone. when i reload the page - i dont see the details...
 34. confirm
 35. merge
+36. change the ui. add button to view task details. then show it on full screen, and add button to edit. do not show the details in the main task list.
+37. confirm
+38. merge
