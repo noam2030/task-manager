@@ -30,3 +30,6 @@
 30. confirm
 31. retry
 32. merge
+33. i dont see the details... i add details and press save, its gone. when i reload the page - i dont see the details...
+34. confirm
+35. merge
