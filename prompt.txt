@@ -26,3 +26,6 @@
 26. add a readme with link to the production website
 27. confirm
 28. merge
+29. add an option to add details to task. while creation and laster to edit. this can be more inoframtion regarding the task and ongoing information related to accomplish it
+30. confirm
+31. retry

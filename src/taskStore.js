@@ -80,11 +80,14 @@ export class TaskStore {
       const snapshot = await this._getUserCollection(cleanUserId).get();
       const items = [];
       snapshot.forEach((doc) => {
-        items.push({ id: doc.id, ...doc.data() });
+        const d = doc.data();
+        items.push({ id: doc.id, details: '', ...d });
       });
       return this._sortTasks(items);
     }
-    const userTasks = this.tasks.filter((t) => (t.userId || 'default-user') === cleanUserId);
+    const userTasks = this.tasks
+      .filter((t) => (t.userId || 'default-user') === cleanUserId)
+      .map((t) => ({ details: '', ...t }));
     return this._sortTasks(userTasks);
   }
 
@@ -92,7 +95,7 @@ export class TaskStore {
     const userId = typeof userOrData === 'string' ? userOrData : 'default-user';
     const data = typeof userOrData === 'string' ? (maybeData || {}) : (userOrData || {});
 
-    const { title, priority = 'Medium' } = data;
+    const { title, priority = 'Medium', details = '' } = data;
     if (!title || typeof title !== 'string' || !title.trim()) {
       throw new Error('Task title is required');
     }
@@ -103,11 +106,13 @@ export class TaskStore {
 
     const cleanUserId = (userId || 'default-user').toString().trim() || 'default-user';
     const now = new Date().toISOString();
+    const cleanDetails = typeof details === 'string' ? details.trim() : (details != null ? String(details).trim() : '');
     const task = {
       id: randomUUID(),
       userId: cleanUserId,
       title: title.trim(),
       priority: cleanPriority,
+      details: cleanDetails,
       completed: false,
       createdAt: now,
       updatedAt: now,
@@ -163,6 +168,10 @@ export class TaskStore {
         cleanUpdates.completed = Boolean(updates.completed);
       }
 
+      if (updates.details !== undefined) {
+        cleanUpdates.details = typeof updates.details === 'string' ? updates.details.trim() : (updates.details != null ? String(updates.details).trim() : '');
+      }
+
       cleanUpdates.updatedAt = new Date().toISOString();
       await docRef.update(cleanUpdates);
       return { id, userId: cleanUserId, ...existing, ...cleanUpdates };
@@ -188,6 +197,10 @@ export class TaskStore {
 
     if (updates.completed !== undefined) {
       task.completed = Boolean(updates.completed);
+    }
+
+    if (updates.details !== undefined) {
+      task.details = typeof updates.details === 'string' ? updates.details.trim() : (updates.details != null ? String(updates.details).trim() : '');
     }
 
     task.updatedAt = new Date().toISOString();

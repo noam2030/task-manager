@@ -296,5 +296,53 @@ test('API - userId query parameter fallback supports isolation', async () => {
   }
 });
 
+test('API - task details creation and PATCH updating', async () => {
+  const { baseUrl, close } = await startTestServer();
+  try {
+    // Create task with details
+    const resCreate = await fetch(`${baseUrl}/api/tasks`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-User-Id': 'details-user',
+      },
+      body: JSON.stringify({
+        title: 'Draft release notes',
+        priority: 'High',
+        details: 'Initial notes: include v1.2 changelog and breaking changes',
+      }),
+    });
+    assert.equal(resCreate.status, 201);
+    const created = await resCreate.json();
+    assert.equal(created.details, 'Initial notes: include v1.2 changelog and breaking changes');
+
+    // Update details via PATCH (ongoing progress info)
+    const resPatch = await fetch(`${baseUrl}/api/tasks/${created.id}`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-User-Id': 'details-user',
+      },
+      body: JSON.stringify({
+        details: 'Updated: added performance benchmark stats to release notes',
+      }),
+    });
+    assert.equal(resPatch.status, 200);
+    const patched = await resPatch.json();
+    assert.equal(patched.details, 'Updated: added performance benchmark stats to release notes');
+
+    // Fetch list and check details
+    const resGet = await fetch(`${baseUrl}/api/tasks`, {
+      headers: { 'X-User-Id': 'details-user' },
+    });
+    assert.equal(resGet.status, 200);
+    const tasks = await resGet.json();
+    assert.equal(tasks.length, 1);
+    assert.equal(tasks[0].details, 'Updated: added performance benchmark stats to release notes');
+  } finally {
+    await close();
+  }
+});
+
 
 

@@ -23,6 +23,7 @@ The application is deployed and available in production:
   3. `Low` (lowest priority)
   Ties are ordered by creation timestamp descending.
 - **🔄 In-Place Priority Modification**: Switch any task's priority level instantaneously directly from the task list.
+- **📝 Task Details & Ongoing Notes**: Add detailed instructions or context during task creation and edit details in-place at any time to track ongoing progress.
 - **✅ Mark as Done**: Mark tasks as completed or pending with a single click.
 - **👁️ Hide / Show Completed Tasks**: Completed tasks are hidden by default to keep focus on pending work, with a toggle to view and restore completed items.
 - **☁️ Persistent Cloud Storage**: All task data is persisted reliably per user in **Google Cloud Firestore** (Native mode).
@@ -87,8 +88,8 @@ All endpoints accept user identification via the `X-User-Id` request header or `
 | Method | Endpoint | Description |
 |---|---|---|
 | `GET` | `/api/tasks` | Retrieve all tasks for the current user, sorted by priority |
-| `POST` | `/api/tasks` | Create a new task (`{ "title": "...", "priority": "High" }`) |
-| `PATCH` | `/api/tasks/:id` | Update task (`completed`, `priority`, or `title`) |
+| `POST` | `/api/tasks` | Create a new task (`{ "title": "...", "priority": "High", "details": "..." }`) |
+| `PATCH` | `/api/tasks/:id` | Update task (`completed`, `priority`, `title`, or `details`) |
 | `DELETE` | `/api/tasks/:id` | Delete a task by ID |
 | `GET` | `/api/health` | Health check probe (`{ "status": "ok" }`) |
 

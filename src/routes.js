@@ -32,8 +32,8 @@ export function createTaskRouter(store = defaultTaskStore) {
   router.post('/tasks', async (req, res) => {
     try {
       const userId = getUserId(req);
-      const { title, priority } = req.body || {};
-      const created = await store.createTask(userId, { title, priority });
+      const { title, priority, details } = req.body || {};
+      const created = await store.createTask(userId, { title, priority, details });
       res.status(201).json(created);
     } catch (err) {
       res.status(400).json({ error: err.message });
