@@ -49,6 +49,7 @@ jobs:
             --project task-manager-510913 \
             --region us-central1 \
             --allow-unauthenticated \
+            --set-env-vars="USE_FIRESTORE=true,GOOGLE_CLOUD_PROJECT=task-manager-510913" \
             --quiet
         env:
           HAS_GCP_CREDENTIALS: ${{ secrets.GCP_SA_KEY != '' }}
