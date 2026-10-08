@@ -18,3 +18,9 @@
 18. add an option to make the task done. make an option to hide show done tasks. default is hide.
 19. confirm
 20. confirm
+21. new feature - per user data. i want this system to be per user. tasks are created and stored per user.
+22. confirm
+23. when i switch user - the tasks remains the same. so it doesnt work
+24. confirm
+25. merge
+

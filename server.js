@@ -15,14 +15,19 @@ export function createApp(store = defaultTaskStore) {
   app.use((req, res, next) => {
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PATCH, DELETE, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-User-Id');
     if (req.method === 'OPTIONS') {
       return res.status(204).end();
     }
     next();
   });
   app.use(express.static(path.join(__dirname, 'public')));
-  app.use('/api', createTaskRouter(store));
+  app.use('/api', (req, res, next) => {
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Vary', 'X-User-Id');
+    next();
+  }, createTaskRouter(store));
 
   // Fallback to index.html for root navigation
   app.get('/', (req, res) => {

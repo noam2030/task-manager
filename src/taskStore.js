@@ -28,10 +28,14 @@ export class TaskStore {
       const projectId = process.env.GOOGLE_CLOUD_PROJECT || 'task-manager-510913';
       console.log(`[TaskStore] Using Firestore (project: ${projectId})`);
       this.db = new Firestore({ projectId });
-      this.collection = this.db.collection('tasks');
     } else {
       this.load();
     }
+  }
+
+  _getUserCollection(userId) {
+    const cleanUserId = (userId || 'default-user').toString().trim() || 'default-user';
+    return this.db.collection('users').doc(cleanUserId).collection('tasks');
   }
 
   load() {
@@ -70,19 +74,25 @@ export class TaskStore {
     });
   }
 
-  async getTasks() {
+  async getTasks(userId = 'default-user') {
+    const cleanUserId = (userId || 'default-user').toString().trim() || 'default-user';
     if (this.useFirestore) {
-      const snapshot = await this.collection.get();
+      const snapshot = await this._getUserCollection(cleanUserId).get();
       const items = [];
       snapshot.forEach((doc) => {
         items.push({ id: doc.id, ...doc.data() });
       });
       return this._sortTasks(items);
     }
-    return this._sortTasks(this.tasks);
+    const userTasks = this.tasks.filter((t) => (t.userId || 'default-user') === cleanUserId);
+    return this._sortTasks(userTasks);
   }
 
-  async createTask({ title, priority = 'Medium' }) {
+  async createTask(userOrData, maybeData) {
+    const userId = typeof userOrData === 'string' ? userOrData : 'default-user';
+    const data = typeof userOrData === 'string' ? (maybeData || {}) : (userOrData || {});
+
+    const { title, priority = 'Medium' } = data;
     if (!title || typeof title !== 'string' || !title.trim()) {
       throw new Error('Task title is required');
     }
@@ -91,9 +101,11 @@ export class TaskStore {
       throw new Error('Priority must be High, Medium, or Low');
     }
 
+    const cleanUserId = (userId || 'default-user').toString().trim() || 'default-user';
     const now = new Date().toISOString();
     const task = {
       id: randomUUID(),
+      userId: cleanUserId,
       title: title.trim(),
       priority: cleanPriority,
       completed: false,
@@ -102,7 +114,7 @@ export class TaskStore {
     };
 
     if (this.useFirestore) {
-      await this.collection.doc(task.id).set(task);
+      await this._getUserCollection(cleanUserId).doc(task.id).set(task);
       return task;
     }
 
@@ -111,9 +123,21 @@ export class TaskStore {
     return task;
   }
 
-  async updateTask(id, updates = {}) {
+  async updateTask(userOrId, idOrUpdates, maybeUpdates) {
+    let userId = 'default-user';
+    let id = userOrId;
+    let updates = idOrUpdates || {};
+
+    if (maybeUpdates !== undefined) {
+      userId = userOrId;
+      id = idOrUpdates;
+      updates = maybeUpdates || {};
+    }
+
+    const cleanUserId = (userId || 'default-user').toString().trim() || 'default-user';
+
     if (this.useFirestore) {
-      const docRef = this.collection.doc(id);
+      const docRef = this._getUserCollection(cleanUserId).doc(id);
       const snapshot = await docRef.get();
       if (!snapshot.exists) return null;
 
@@ -141,10 +165,10 @@ export class TaskStore {
 
       cleanUpdates.updatedAt = new Date().toISOString();
       await docRef.update(cleanUpdates);
-      return { id, ...existing, ...cleanUpdates };
+      return { id, userId: cleanUserId, ...existing, ...cleanUpdates };
     }
 
-    const task = this.tasks.find((t) => t.id === id);
+    const task = this.tasks.find((t) => t.id === id && (t.userId || 'default-user') === cleanUserId);
     if (!task) return null;
 
     if (updates.title !== undefined) {
@@ -171,9 +195,13 @@ export class TaskStore {
     return task;
   }
 
-  async deleteTask(id) {
+  async deleteTask(userOrId, maybeId) {
+    const userId = maybeId !== undefined ? userOrId : 'default-user';
+    const id = maybeId !== undefined ? maybeId : userOrId;
+    const cleanUserId = (userId || 'default-user').toString().trim() || 'default-user';
+
     if (this.useFirestore) {
-      const docRef = this.collection.doc(id);
+      const docRef = this._getUserCollection(cleanUserId).doc(id);
       const snapshot = await docRef.get();
       if (!snapshot.exists) return false;
       await docRef.delete();
@@ -181,7 +209,7 @@ export class TaskStore {
     }
 
     const initialLength = this.tasks.length;
-    this.tasks = this.tasks.filter((t) => t.id !== id);
+    this.tasks = this.tasks.filter((t) => !(t.id === id && (t.userId || 'default-user') === cleanUserId));
     if (this.tasks.length !== initialLength) {
       this.save();
       return true;
