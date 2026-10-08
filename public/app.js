@@ -42,11 +42,35 @@ function switchUser() {
   }
 }
 
+function getApiUrl(path) {
+  const hostname = window.location.hostname;
+  const isVercelPreview = hostname.includes('vercel.app') &&
+    !hostname.includes('task-manager-ui-gamma-blond') &&
+    !hostname.startsWith('task-manager-ui.');
+  const base = isVercelPreview
+    ? 'https://task-manager-staging-608477010863.us-central1.run.app'
+    : '';
+
+  const separator = path.includes('?') ? '&' : '?';
+  return `${base}${path}${separator}userId=${encodeURIComponent(currentUserId)}`;
+}
+
+function getRequestOptions(options = {}) {
+  const headers = {
+    'X-User-Id': currentUserId,
+    ...(options.headers || {}),
+  };
+  return {
+    cache: 'no-store',
+    ...options,
+    headers,
+  };
+}
+
 async function fetchTasks() {
   try {
-    const res = await fetch('/api/tasks', {
-      headers: { 'X-User-Id': currentUserId },
-    });
+    const url = getApiUrl('/api/tasks');
+    const res = await fetch(url, getRequestOptions());
     if (!res.ok) throw new Error('Failed to fetch tasks');
     allTasks = await res.json();
     renderTasks(allTasks);
@@ -168,14 +192,14 @@ function escapeHtml(str) {
 
 async function createTask(title, priority) {
   try {
-    const res = await fetch('/api/tasks', {
+    const url = getApiUrl('/api/tasks');
+    const res = await fetch(url, getRequestOptions({
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'X-User-Id': currentUserId,
       },
       body: JSON.stringify({ title, priority }),
-    });
+    }));
     if (!res.ok) {
       const err = await res.json();
       throw new Error(err.error || 'Failed to create task');
@@ -188,14 +212,14 @@ async function createTask(title, priority) {
 
 async function updateTaskPriority(id, priority) {
   try {
-    const res = await fetch(`/api/tasks/${id}`, {
+    const url = getApiUrl(`/api/tasks/${id}`);
+    const res = await fetch(url, getRequestOptions({
       method: 'PATCH',
       headers: {
         'Content-Type': 'application/json',
-        'X-User-Id': currentUserId,
       },
       body: JSON.stringify({ priority }),
-    });
+    }));
     if (!res.ok) throw new Error('Failed to update task priority');
     await fetchTasks();
   } catch (err) {
@@ -206,14 +230,14 @@ async function updateTaskPriority(id, priority) {
 
 async function toggleTask(id, completed) {
   try {
-    const res = await fetch(`/api/tasks/${id}`, {
+    const url = getApiUrl(`/api/tasks/${id}`);
+    const res = await fetch(url, getRequestOptions({
       method: 'PATCH',
       headers: {
         'Content-Type': 'application/json',
-        'X-User-Id': currentUserId,
       },
       body: JSON.stringify({ completed }),
-    });
+    }));
     if (!res.ok) throw new Error('Failed to update task');
     await fetchTasks();
   } catch (err) {
@@ -224,12 +248,10 @@ async function toggleTask(id, completed) {
 
 async function deleteTask(id) {
   try {
-    const res = await fetch(`/api/tasks/${id}`, {
+    const url = getApiUrl(`/api/tasks/${id}`);
+    const res = await fetch(url, getRequestOptions({
       method: 'DELETE',
-      headers: {
-        'X-User-Id': currentUserId,
-      },
-    });
+    }));
     if (!res.ok) throw new Error('Failed to delete task');
     await fetchTasks();
   } catch (err) {

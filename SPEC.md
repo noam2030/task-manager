@@ -77,11 +77,13 @@ flowchart LR
 - **File Structure**:
   - `server.js`: Server bootstrap, CORS handling, Express configuration, middleware, and route mounting.
   - `src/taskStore.js`: Task repository abstraction with per-user data handling, Firestore integration (`users/{userId}/tasks`), local fallback, priority sorting logic, and CRUD operations.
-  - `src/routes.js`: Express router extracting `userId` from `X-User-Id` header (or query/body fallback), validating user presence, and dispatching to store.
+  - `src/routes.js`: Express router extracting `userId` from `X-User-Id` header (or `userId` query parameter fallback), validating user presence, and dispatching to store.
 - **User Scoping & Security**:
-  - Middleware extracts `userId = req.headers['x-user-id']?.trim()`.
-  - If missing, defaults to `'default-user'` or returns `400` when strict.
-- **CORS Handling**: Supports CORS headers allowing `X-User-Id` header across all origins.
+  - Middleware extracts `userId = req.headers['x-user-id']?.trim() || req.query.userId?.trim()`.
+  - If missing, defaults to `'default-user'`.
+- **CORS & Cache Control Handling**:
+  - Supports CORS headers allowing `X-User-Id` header across all origins.
+  - Sends `Cache-Control: no-store, no-cache, must-revalidate, private`, `Pragma: no-cache`, and `Vary: X-User-Id` to prevent proxy/browser caching across user switches.
 - **Priority Ranking Algorithm**:
   - Priority weights: `High` = 1, `Medium` = 2, `Low` = 3.
   - Sorting comparator: Compare priority weight ascending; if weights are equal, sort `createdAt` descending.
@@ -90,10 +92,10 @@ flowchart LR
 - **File Structure**:
   - `public/index.html`: Accessible semantic markup with user profile pill, task form, priority selector, show/hide done tasks toggle, and task list container.
   - `public/style.css`: Modern, clean CSS using CSS custom properties (variables), Flexbox, user pill styling, responsive layout.
-  - `public/app.js`: Client-side logic managing `activeUser`, attaching `X-User-Id` header on all requests, handling user switching, task creation, priority changing, completion toggling, filtering, rendering cards, and handling deletions.
-  - `vercel.json`: Vercel project configuration linking `public/` directory and proxying `/api/*` to Cloud Run.
+  - `public/app.js`: Client-side logic managing `currentUserId`, attaching both `X-User-Id` header and `?userId=<userId>` query parameter on all requests with `cache: 'no-store'`, handling user switching, task creation, priority changing, completion toggling, filtering, rendering cards, and handling deletions. Dynamically targets staging backend `https://task-manager-staging-608477010863.us-central1.run.app` when deployed on Vercel preview domains.
+  - `vercel.json`: Vercel project configuration linking `public/` directory and proxying `/api/*` to the appropriate Cloud Run service.
 - **State Handling**:
-  - `activeUser`: string stored in `localStorage` (defaults to prompt or `'user-1'`).
+  - `currentUserId`: string stored in `localStorage` (defaults to `'noam'`).
   - `showCompleted`: boolean flag, defaults to `false` (hide done tasks).
   - Toggling user re-fetches and renders tasks for the newly selected user.
 
@@ -110,16 +112,18 @@ flowchart LR
 | `updatedAt` | `string` | ISO 8601 timestamp string |
 
 ## 9. API
-All endpoints require `X-User-Id` header (or default to `'default-user'`). All responses return JSON.
+All endpoints accept user identification via `X-User-Id` header or `?userId=<userId>` query parameter (defaulting to `'default-user'`). All responses return JSON and include `Cache-Control: no-store, no-cache, must-revalidate, private`.
 
 ### Endpoints
 1. `GET /api/tasks`
    - Description: Retrieves all tasks for the requesting user, sorted by priority (`High` -> `Medium` -> `Low`), then by newest `createdAt`.
    - Headers: `X-User-Id: <userId>`
+   - Query Parameters: `userId=<userId>` (optional fallback)
    - Response `200 OK`: `[{ "id": "...", "userId": "...", "title": "...", "priority": "High", "completed": false, ... }]`
 2. `POST /api/tasks`
    - Description: Creates a new task for the requesting user.
    - Headers: `X-User-Id: <userId>`
+   - Query Parameters: `userId=<userId>` (optional fallback)
    - Request Body:
      ```json
      {
@@ -132,6 +136,7 @@ All endpoints require `X-User-Id` header (or default to `'default-user'`). All r
 3. `PATCH /api/tasks/:id`
    - Description: Updates a task's `completed` status (`true` / `false`), `priority`, or `title` for the requesting user.
    - Headers: `X-User-Id: <userId>`
+   - Query Parameters: `userId=<userId>` (optional fallback)
    - Request Body:
      ```json
      {
@@ -143,6 +148,7 @@ All endpoints require `X-User-Id` header (or default to `'default-user'`). All r
 4. `DELETE /api/tasks/:id`
    - Description: Deletes a task by ID for the requesting user.
    - Headers: `X-User-Id: <userId>`
+   - Query Parameters: `userId=<userId>` (optional fallback)
    - Response `204 No Content`
    - Response `404 Not Found`: If task ID does not exist for the requesting user.
 5. `GET /api/health`
@@ -154,7 +160,8 @@ All endpoints require `X-User-Id` header (or default to `'default-user'`). All r
 - **Node Environment**: `NODE_ENV` (defaults to `production` in container, `development` locally).
 - **Data File**: `DATA_FILE_PATH` (defaults to `./data/tasks.json` for local fallback).
 - **GCP Project**: `task-manager-510913` (defaults in code and set via `GOOGLE_CLOUD_PROJECT`).
-- **Backend API URL**: `https://task-manager-608477010863.us-central1.run.app` (routed in `vercel.json`).
+- **Production Backend URL**: `https://task-manager-608477010863.us-central1.run.app`.
+- **Staging Backend URL**: `https://task-manager-staging-608477010863.us-central1.run.app`.
 - **Vercel Project Name**: `task-manager-ui`.
 - **GCP Region**: `us-central1`.
 

@@ -22,7 +22,12 @@ export function createApp(store = defaultTaskStore) {
     next();
   });
   app.use(express.static(path.join(__dirname, 'public')));
-  app.use('/api', createTaskRouter(store));
+  app.use('/api', (req, res, next) => {
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Vary', 'X-User-Id');
+    next();
+  }, createTaskRouter(store));
 
   // Fallback to index.html for root navigation
   app.get('/', (req, res) => {

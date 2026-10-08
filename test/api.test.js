@@ -253,4 +253,48 @@ test('API - per-user data isolation', async () => {
   }
 });
 
+test('API - Cache-Control and Vary headers are present on /api routes', async () => {
+  const { baseUrl, close } = await startTestServer();
+  try {
+    const res = await fetch(`${baseUrl}/api/tasks`);
+    assert.equal(res.status, 200);
+    assert.match(res.headers.get('cache-control'), /no-store/);
+    assert.match(res.headers.get('cache-control'), /no-cache/);
+    assert.match(res.headers.get('vary'), /X-User-Id/);
+  } finally {
+    await close();
+  }
+});
+
+test('API - userId query parameter fallback supports isolation', async () => {
+  const { baseUrl, close } = await startTestServer();
+  try {
+    // Create via query param
+    const resCreate = await fetch(`${baseUrl}/api/tasks?userId=query-user`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ title: 'Task via query', priority: 'High' }),
+    });
+    assert.equal(resCreate.status, 201);
+    const task = await resCreate.json();
+    assert.equal(task.userId, 'query-user');
+
+    // Get via query param
+    const resGet = await fetch(`${baseUrl}/api/tasks?userId=query-user`);
+    assert.equal(resGet.status, 200);
+    const tasks = await resGet.json();
+    assert.equal(tasks.length, 1);
+    assert.equal(tasks[0].id, task.id);
+
+    // Another user gets empty
+    const resOther = await fetch(`${baseUrl}/api/tasks?userId=different-user`);
+    assert.equal(resOther.status, 200);
+    const otherTasks = await resOther.json();
+    assert.equal(otherTasks.length, 0);
+  } finally {
+    await close();
+  }
+});
+
+
 
