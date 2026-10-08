@@ -164,8 +164,93 @@ test('API - CORS headers are present', async () => {
     assert.equal(res.status, 204);
     assert.equal(res.headers.get('access-control-allow-origin'), '*');
     assert.match(res.headers.get('access-control-allow-methods'), /GET/);
+    assert.match(res.headers.get('access-control-allow-headers'), /X-User-Id/);
   } finally {
     await close();
   }
 });
+
+test('API - per-user data isolation', async () => {
+  const { baseUrl, close } = await startTestServer();
+  try {
+    // Alice creates a task
+    const aliceCreateRes = await fetch(`${baseUrl}/api/tasks`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-User-Id': 'alice',
+      },
+      body: JSON.stringify({ title: 'Alice secret task', priority: 'High' }),
+    });
+    assert.equal(aliceCreateRes.status, 201);
+    const aliceTask = await aliceCreateRes.json();
+    assert.equal(aliceTask.userId, 'alice');
+
+    // Bob creates a task
+    const bobCreateRes = await fetch(`${baseUrl}/api/tasks`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-User-Id': 'bob',
+      },
+      body: JSON.stringify({ title: 'Bob secret task', priority: 'Low' }),
+    });
+    assert.equal(bobCreateRes.status, 201);
+    const bobTask = await bobCreateRes.json();
+    assert.equal(bobTask.userId, 'bob');
+
+    // Alice fetches tasks -> only sees Alice's task
+    const aliceGetRes = await fetch(`${baseUrl}/api/tasks`, {
+      headers: { 'X-User-Id': 'alice' },
+    });
+    assert.equal(aliceGetRes.status, 200);
+    const aliceTasks = await aliceGetRes.json();
+    assert.equal(aliceTasks.length, 1);
+    assert.equal(aliceTasks[0].id, aliceTask.id);
+
+    // Bob fetches tasks -> only sees Bob's task
+    const bobGetRes = await fetch(`${baseUrl}/api/tasks`, {
+      headers: { 'X-User-Id': 'bob' },
+    });
+    assert.equal(bobGetRes.status, 200);
+    const bobTasks = await bobGetRes.json();
+    assert.equal(bobTasks.length, 1);
+    assert.equal(bobTasks[0].id, bobTask.id);
+
+    // Alice attempts to update Bob's task -> 404
+    const crossPatchRes = await fetch(`${baseUrl}/api/tasks/${bobTask.id}`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-User-Id': 'alice',
+      },
+      body: JSON.stringify({ completed: true }),
+    });
+    assert.equal(crossPatchRes.status, 404);
+
+    // Alice attempts to delete Bob's task -> 404
+    const crossDeleteRes = await fetch(`${baseUrl}/api/tasks/${bobTask.id}`, {
+      method: 'DELETE',
+      headers: { 'X-User-Id': 'alice' },
+    });
+    assert.equal(crossDeleteRes.status, 404);
+
+    // Bob successfully deletes Bob's task -> 204
+    const bobDeleteRes = await fetch(`${baseUrl}/api/tasks/${bobTask.id}`, {
+      method: 'DELETE',
+      headers: { 'X-User-Id': 'bob' },
+    });
+    assert.equal(bobDeleteRes.status, 204);
+
+    // Bob's list is now empty, Alice's task remains untouched
+    const bobListAfter = await (await fetch(`${baseUrl}/api/tasks`, { headers: { 'X-User-Id': 'bob' } })).json();
+    assert.equal(bobListAfter.length, 0);
+
+    const aliceListAfter = await (await fetch(`${baseUrl}/api/tasks`, { headers: { 'X-User-Id': 'alice' } })).json();
+    assert.equal(aliceListAfter.length, 1);
+  } finally {
+    await close();
+  }
+});
+
 

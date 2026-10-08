@@ -9,9 +9,15 @@
 <body>
   <div class="container">
     <header class="app-header">
-      <div class="header-content">
-        <h1>Task Manager</h1>
-        <p class="subtitle">Prioritize and organize your daily work</p>
+      <div class="header-top">
+        <div class="header-content">
+          <h1>Task Manager</h1>
+          <p class="subtitle">Prioritize and organize your daily work</p>
+        </div>
+        <div class="user-profile">
+          <span class="user-badge" id="userBadge" title="Active user">👤 <strong id="currentUserName">user</strong></span>
+          <button type="button" class="btn btn-user-switch" id="switchUserBtn" title="Switch active user">Switch User</button>
+        </div>
       </div>
       <div class="stats-bar" id="statsBar">
         <span class="stat-pill"><strong id="totalCount">0</strong> tasks</span>

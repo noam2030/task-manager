@@ -73,3 +73,45 @@ test('TaskStore - modifying priority re-sorts tasks', async () => {
   assert.equal(tasks[1].id, medTask.id);
 });
 
+test('TaskStore - per-user isolation', async () => {
+  const store = new TaskStore({ filePath: '', useFirestore: false });
+
+  // Create tasks for user-alpha and user-beta
+  const alphaTask = await store.createTask('user-alpha', { title: 'Alpha task', priority: 'High' });
+  const betaTask = await store.createTask('user-beta', { title: 'Beta task', priority: 'Low' });
+
+  assert.equal(alphaTask.userId, 'user-alpha');
+  assert.equal(betaTask.userId, 'user-beta');
+
+  // getTasks returns only user's own tasks
+  const alphaTasks = await store.getTasks('user-alpha');
+  assert.equal(alphaTasks.length, 1);
+  assert.equal(alphaTasks[0].id, alphaTask.id);
+
+  const betaTasks = await store.getTasks('user-beta');
+  assert.equal(betaTasks.length, 1);
+  assert.equal(betaTasks[0].id, betaTask.id);
+
+  // Cross-user update must fail
+  const failedUpdate = await store.updateTask('user-alpha', betaTask.id, { completed: true });
+  assert.equal(failedUpdate, null);
+
+  // Cross-user delete must fail
+  const failedDelete = await store.deleteTask('user-alpha', betaTask.id);
+  assert.equal(failedDelete, false);
+
+  // Ensure betaTask is untouched
+  const betaTasksAfter = await store.getTasks('user-beta');
+  assert.equal(betaTasksAfter.length, 1);
+  assert.equal(betaTasksAfter[0].completed, false);
+
+  // User-beta can update and delete their own task
+  const successfulUpdate = await store.updateTask('user-beta', betaTask.id, { completed: true });
+  assert.equal(successfulUpdate.completed, true);
+
+  const successfulDelete = await store.deleteTask('user-beta', betaTask.id);
+  assert.equal(successfulDelete, true);
+  assert.equal((await store.getTasks('user-beta')).length, 0);
+});
+
+

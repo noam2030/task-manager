@@ -9,12 +9,44 @@ const completedCount = document.getElementById('completedCount');
 const toggleCompletedBtn = document.getElementById('toggleCompletedBtn');
 const hiddenDoneCount = document.getElementById('hiddenDoneCount');
 
+const USER_STORAGE_KEY = 'taskManagerUser';
+
+function getCurrentUserId() {
+  const saved = localStorage.getItem(USER_STORAGE_KEY);
+  if (saved && saved.trim()) {
+    return saved.trim();
+  }
+  const defaultUser = 'noam';
+  localStorage.setItem(USER_STORAGE_KEY, defaultUser);
+  return defaultUser;
+}
+
+let currentUserId = getCurrentUserId();
 let allTasks = [];
 let showCompleted = false; // Default: hide done tasks
 
+function updateUserBadge() {
+  const currentUserNameEl = document.getElementById('currentUserName');
+  if (currentUserNameEl) {
+    currentUserNameEl.textContent = currentUserId;
+  }
+}
+
+function switchUser() {
+  const input = window.prompt('Enter username or identifier:', currentUserId);
+  if (input !== null && input.trim() && input.trim() !== currentUserId) {
+    currentUserId = input.trim();
+    localStorage.setItem(USER_STORAGE_KEY, currentUserId);
+    updateUserBadge();
+    fetchTasks();
+  }
+}
+
 async function fetchTasks() {
   try {
-    const res = await fetch('/api/tasks');
+    const res = await fetch('/api/tasks', {
+      headers: { 'X-User-Id': currentUserId },
+    });
     if (!res.ok) throw new Error('Failed to fetch tasks');
     allTasks = await res.json();
     renderTasks(allTasks);
@@ -138,7 +170,10 @@ async function createTask(title, priority) {
   try {
     const res = await fetch('/api/tasks', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'X-User-Id': currentUserId,
+      },
       body: JSON.stringify({ title, priority }),
     });
     if (!res.ok) {
@@ -155,7 +190,10 @@ async function updateTaskPriority(id, priority) {
   try {
     const res = await fetch(`/api/tasks/${id}`, {
       method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'X-User-Id': currentUserId,
+      },
       body: JSON.stringify({ priority }),
     });
     if (!res.ok) throw new Error('Failed to update task priority');
@@ -170,7 +208,10 @@ async function toggleTask(id, completed) {
   try {
     const res = await fetch(`/api/tasks/${id}`, {
       method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'X-User-Id': currentUserId,
+      },
       body: JSON.stringify({ completed }),
     });
     if (!res.ok) throw new Error('Failed to update task');
@@ -185,6 +226,9 @@ async function deleteTask(id) {
   try {
     const res = await fetch(`/api/tasks/${id}`, {
       method: 'DELETE',
+      headers: {
+        'X-User-Id': currentUserId,
+      },
     });
     if (!res.ok) throw new Error('Failed to delete task');
     await fetchTasks();
@@ -192,6 +236,11 @@ async function deleteTask(id) {
     console.error(err);
     await fetchTasks();
   }
+}
+
+const switchUserBtn = document.getElementById('switchUserBtn');
+if (switchUserBtn) {
+  switchUserBtn.addEventListener('click', switchUser);
 }
 
 if (toggleCompletedBtn) {
@@ -213,4 +262,5 @@ taskForm.addEventListener('submit', async (e) => {
 });
 
 // Initialize on page load
+updateUserBadge();
 fetchTasks();
