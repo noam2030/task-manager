@@ -10,6 +10,21 @@ const completedCount = document.getElementById('completedCount');
 const toggleCompletedBtn = document.getElementById('toggleCompletedBtn');
 const hiddenDoneCount = document.getElementById('hiddenDoneCount');
 
+// Full-Screen Details Modal elements
+const detailsModal = document.getElementById('detailsModal');
+const modalPriorityBadge = document.getElementById('modalPriorityBadge');
+const modalStatusBadge = document.getElementById('modalStatusBadge');
+const modalTaskTitle = document.getElementById('modalTaskTitle');
+const modalDetailsText = document.getElementById('modalDetailsText');
+const detailsViewMode = document.getElementById('detailsViewMode');
+const detailsEditMode = document.getElementById('detailsEditMode');
+const modalDetailsTextarea = document.getElementById('modalDetailsTextarea');
+const editDetailsBtn = document.getElementById('editDetailsBtn');
+const saveModalDetailsBtn = document.getElementById('saveModalDetailsBtn');
+const cancelModalDetailsBtn = document.getElementById('cancelModalDetailsBtn');
+const closeModalBtn = document.getElementById('closeModalBtn');
+let activeModalTaskId = null;
+
 const USER_STORAGE_KEY = 'taskManagerUser';
 
 function getCurrentUserId() {
@@ -75,6 +90,12 @@ async function fetchTasks() {
     if (!res.ok) throw new Error('Failed to fetch tasks');
     allTasks = await res.json();
     renderTasks(allTasks);
+    if (activeModalTaskId) {
+      const activeTask = allTasks.find((t) => t.id === activeModalTaskId);
+      if (activeTask) {
+        renderModalContent(activeTask);
+      }
+    }
   } catch (err) {
     console.error('Error fetching tasks:', err);
   }
@@ -136,92 +157,48 @@ function renderTasks(tasks) {
     const hasDetails = Boolean(taskDetails);
 
     li.innerHTML = `
-      <div class="task-main">
-        <div class="task-left">
-          <input
-            type="checkbox"
-            class="task-checkbox"
-            ${task.completed ? 'checked' : ''}
-            aria-label="Mark task '${escapeHtml(task.title)}' as ${task.completed ? 'incomplete' : 'done'}"
-            title="${task.completed ? 'Mark as incomplete' : 'Mark as done'}"
-          />
-          <div class="task-content">
-            <span class="task-title">${escapeHtml(task.title)}</span>
-            <div class="task-details-view">
-              ${hasDetails ? `<div class="task-details-text">${escapeHtml(taskDetails)}</div>` : ''}
-              <button
-                type="button"
-                class="btn-details-action"
-                aria-label="${hasDetails ? 'Edit details for' : 'Add details to'} task '${escapeHtml(task.title)}'"
-              >
-                ${hasDetails ? '✎ Edit details' : '＋ Add details'}
-              </button>
-            </div>
-            <div class="task-details-editor" hidden>
-              <textarea
-                class="details-edit-textarea"
-                rows="2"
-                placeholder="Add details, notes, or ongoing progress context..."
-                aria-label="Edit details for task '${escapeHtml(task.title)}'"
-              >${escapeHtml(taskDetails)}</textarea>
-              <div class="details-edit-actions">
-                <button type="button" class="btn-details-save">Save</button>
-                <button type="button" class="btn-details-cancel">Cancel</button>
-              </div>
-            </div>
-          </div>
-        </div>
-        <div class="task-right">
-          <select
-            class="priority-select ${priorityClass}"
-            aria-label="Change priority for task '${escapeHtml(task.title)}'"
-            title="Change priority"
-          >
-            <option value="High" ${task.priority === 'High' ? 'selected' : ''}>High</option>
-            <option value="Medium" ${task.priority === 'Medium' ? 'selected' : ''}>Medium</option>
-            <option value="Low" ${task.priority === 'Low' ? 'selected' : ''}>Low</option>
-          </select>
-          <button
-            type="button"
-            class="delete-btn"
-            aria-label="Delete task '${escapeHtml(task.title)}'"
-            title="Delete task"
-          >✕</button>
-        </div>
+      <div class="task-left">
+        <input
+          type="checkbox"
+          class="task-checkbox"
+          ${task.completed ? 'checked' : ''}
+          aria-label="Mark task '${escapeHtml(task.title)}' as ${task.completed ? 'incomplete' : 'done'}"
+          title="${task.completed ? 'Mark as incomplete' : 'Mark as done'}"
+        />
+        <span class="task-title">${escapeHtml(task.title)}</span>
+      </div>
+      <div class="task-right">
+        <button
+          type="button"
+          class="btn-view-details ${hasDetails ? 'has-details' : ''}"
+          aria-label="View details for task '${escapeHtml(task.title)}'"
+          title="${hasDetails ? 'View details (notes attached)' : 'View details'}"
+        >
+          📄 Details${hasDetails ? ' •' : ''}
+        </button>
+        <select
+          class="priority-select ${priorityClass}"
+          aria-label="Change priority for task '${escapeHtml(task.title)}'"
+          title="Change priority"
+        >
+          <option value="High" ${task.priority === 'High' ? 'selected' : ''}>High</option>
+          <option value="Medium" ${task.priority === 'Medium' ? 'selected' : ''}>Medium</option>
+          <option value="Low" ${task.priority === 'Low' ? 'selected' : ''}>Low</option>
+        </select>
+        <button
+          type="button"
+          class="delete-btn"
+          aria-label="Delete task '${escapeHtml(task.title)}'"
+          title="Delete task"
+        >✕</button>
       </div>
     `;
 
-    // Inline details editor listeners
-    const detailsView = li.querySelector('.task-details-view');
-    const detailsEditor = li.querySelector('.task-details-editor');
-    const detailsActionBtn = li.querySelector('.btn-details-action');
-    const detailsTextarea = li.querySelector('.details-edit-textarea');
-    const saveBtn = li.querySelector('.btn-details-save');
-    const cancelBtn = li.querySelector('.btn-details-cancel');
-
-    if (detailsActionBtn && detailsEditor && detailsView) {
-      detailsActionBtn.addEventListener('click', () => {
-        detailsView.hidden = true;
-        detailsEditor.hidden = false;
-        detailsTextarea.focus();
-      });
-
-      cancelBtn.addEventListener('click', () => {
-        detailsTextarea.value = taskDetails;
-        detailsEditor.hidden = true;
-        detailsView.hidden = false;
-      });
-
-      saveBtn.addEventListener('click', async () => {
-        const newDetails = detailsTextarea.value.trim();
-        saveBtn.disabled = true;
-        saveBtn.textContent = 'Saving...';
-        try {
-          await updateTaskDetails(task.id, newDetails);
-        } finally {
-          saveBtn.disabled = false;
-          saveBtn.textContent = 'Save';
-        }
+    // View Details button listener
+    const viewDetailsBtn = li.querySelector('.btn-view-details');
+    if (viewDetailsBtn) {
+      viewDetailsBtn.addEventListener('click', () => {
+        openDetailsModal(task);
       });
     }
 
@@ -245,6 +222,47 @@ function renderTasks(tasks) {
 
     taskList.appendChild(li);
   });
+}
+
+function openDetailsModal(task) {
+  activeModalTaskId = task.id;
+  renderModalContent(task);
+  detailsModal.hidden = false;
+  document.body.style.overflow = 'hidden';
+}
+
+function renderModalContent(task) {
+  modalTaskTitle.textContent = task.title;
+
+  // Priority badge
+  modalPriorityBadge.textContent = task.priority;
+  modalPriorityBadge.className = `details-modal-badge badge-${task.priority.toLowerCase()}`;
+
+  // Status badge
+  modalStatusBadge.textContent = task.completed ? 'Completed' : 'Pending';
+  modalStatusBadge.className = `details-modal-status ${task.completed ? 'status-completed' : 'status-pending'}`;
+
+  // Details text
+  const text = (task.details || '').trim();
+  if (text) {
+    modalDetailsText.textContent = text;
+    modalDetailsText.classList.remove('empty-details');
+  } else {
+    modalDetailsText.textContent = 'No details or notes added for this task yet. Click "✎ Edit Details" to add information.';
+    modalDetailsText.classList.add('empty-details');
+  }
+
+  modalDetailsTextarea.value = task.details || '';
+
+  // Reset to view mode
+  detailsViewMode.hidden = false;
+  detailsEditMode.hidden = true;
+}
+
+function closeDetailsModal() {
+  detailsModal.hidden = true;
+  document.body.style.overflow = '';
+  activeModalTaskId = null;
 }
 
 function escapeHtml(str) {
@@ -287,7 +305,12 @@ async function updateTaskDetails(id, details) {
       const err = await res.json().catch(() => ({}));
       throw new Error(err.error || 'Failed to update task details');
     }
+    const updated = await res.json();
     await fetchTasks();
+    if (activeModalTaskId === id) {
+      const activeTask = allTasks.find((t) => t.id === id) || updated;
+      renderModalContent(activeTask);
+    }
   } catch (err) {
     console.error('Error updating task details:', err);
     alert(err.message);
@@ -338,6 +361,9 @@ async function deleteTask(id) {
       method: 'DELETE',
     }));
     if (!res.ok) throw new Error('Failed to delete task');
+    if (activeModalTaskId === id) {
+      closeDetailsModal();
+    }
     await fetchTasks();
   } catch (err) {
     console.error(err);
@@ -356,6 +382,59 @@ if (toggleCompletedBtn) {
     renderTasks(allTasks);
   });
 }
+
+// Modal event listeners
+if (editDetailsBtn) {
+  editDetailsBtn.addEventListener('click', () => {
+    detailsViewMode.hidden = true;
+    detailsEditMode.hidden = false;
+    modalDetailsTextarea.focus();
+  });
+}
+
+if (cancelModalDetailsBtn) {
+  cancelModalDetailsBtn.addEventListener('click', () => {
+    const task = allTasks.find((t) => t.id === activeModalTaskId);
+    modalDetailsTextarea.value = task ? (task.details || '') : '';
+    detailsEditMode.hidden = true;
+    detailsViewMode.hidden = false;
+  });
+}
+
+if (saveModalDetailsBtn) {
+  saveModalDetailsBtn.addEventListener('click', async () => {
+    if (!activeModalTaskId) return;
+    const newDetails = modalDetailsTextarea.value.trim();
+    saveModalDetailsBtn.disabled = true;
+    saveModalDetailsBtn.textContent = 'Saving...';
+    try {
+      await updateTaskDetails(activeModalTaskId, newDetails);
+      detailsEditMode.hidden = true;
+      detailsViewMode.hidden = false;
+    } finally {
+      saveModalDetailsBtn.disabled = false;
+      saveModalDetailsBtn.textContent = 'Save Details';
+    }
+  });
+}
+
+if (closeModalBtn) {
+  closeModalBtn.addEventListener('click', closeDetailsModal);
+}
+
+if (detailsModal) {
+  detailsModal.addEventListener('click', (e) => {
+    if (e.target === detailsModal) {
+      closeDetailsModal();
+    }
+  });
+}
+
+window.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && detailsModal && !detailsModal.hidden) {
+    closeDetailsModal();
+  }
+});
 
 taskForm.addEventListener('submit', async (e) => {
   e.preventDefault();

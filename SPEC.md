@@ -7,7 +7,7 @@ Task Manager is a minimal, high-efficiency web application designed to manage pe
 - **Per-User Isolation**: All task creation, storage, retrieval, modification, and deletion are strictly scoped to the active user (`userId`). User A cannot access or modify User B's tasks.
 - **User Identity & Switching**: Users identify themselves by a username or identifier. The frontend allows switching users, persisting the active user in local storage.
 - **Task Creation**: Users can create tasks with a title, an optional details/notes field, and an assigned priority (`High`, `Medium`, or `Low`) within their account.
-- **Task Details (Creation & Ongoing Editing)**: Users can attach detailed context/notes during task creation and edit the details at any time later to capture ongoing information and progress.
+- **Task Details (Creation, Full-Screen Viewing & Editing)**: Users can attach detailed context/notes during task creation. To keep the task list clean and compact, details are hidden from the main list items; instead, each task has a dedicated "Details" button. Clicking this button opens a full-screen view displaying the details, equipped with an "Edit Details" button allowing multi-line editing with Save/Cancel controls.
 - **Priority Modification**: Users can change the priority level (`High`, `Medium`, or `Low`) of any existing task directly from their task list.
 - **Priority-Based Sorting**: The user's task list must always be ordered primarily by priority level:
   1. `High` (highest priority)
@@ -39,17 +39,21 @@ Task Manager is a minimal, high-efficiency web application designed to manage pe
   - Default view hides completed tasks so users can focus on pending work.
 - **Task List View**:
   - Displays user's visible tasks sorted by priority (`High` -> `Medium` -> `Low`).
+  - Compact and clean task items: details text is not displayed in the main list. Each item includes the checkbox, task title, a `"Details"` button, the priority select dropdown, and the delete button.
   - Interactive priority selector badge on each task item allowing instantaneous switching between `High`, `Medium`, and `Low` with corresponding badge styling:
     - `High`: Red / Coral badge
     - `Medium`: Amber / Orange badge
     - `Low`: Green / Teal badge
   - Interactive checkbox / done button to mark task as completed (done). When marked as done, if completed tasks are hidden, the task is smoothly removed from the active view.
   - Completed tasks when visible display with strikethrough title and subdued text color.
-  - **Task Details & Inline Editing**:
-    - Each task displays its details below the title. If no details were initially provided, a clean `+ Add details` action is shown.
-    - Users can view and edit the details directly on the card with an inline textarea and Save/Cancel controls, enabling continuous logging of context and progress.
   - Delete button (`✕`) with immediate optimistic/real-time update.
   - Empty state displaying a friendly message when no pending tasks remain or no tasks exist for the active user.
+- **Full-Screen Task Details Modal / View**:
+  - Clicking the `"Details"` button on any task opens a full-screen view displaying task title, priority badge, completion status, and the complete formatted details text (`white-space: pre-wrap`).
+  - Displays an `"Edit Details"` button to switch to inline editing within the full-screen view.
+  - Edit mode features a spacious textarea and `"Save"` / `"Cancel"` buttons.
+  - When saving, updates the task via `PATCH /api/tasks/:id` with instant visual feedback ("Saving...").
+  - Features a prominent `"Close"` button (also supports pressing `Escape` or clicking the backdrop) to return seamlessly to the task list.
 - **Responsive Design**: Fast, modern, mobile-friendly interface designed with accessible semantic HTML and CSS variables.
 
 ## 4. Architecture
