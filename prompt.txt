@@ -10,3 +10,4 @@
 10. merge
 11. add an option to chang the priority of a task
 12. confirm
+13. merge
