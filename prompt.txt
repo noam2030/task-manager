@@ -22,4 +22,5 @@
 22. confirm
 23. when i switch user - the tasks remains the same. so it doesnt work
 24. confirm
+25. merge
 
