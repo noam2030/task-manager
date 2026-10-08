@@ -214,7 +214,14 @@ function renderTasks(tasks) {
 
       saveBtn.addEventListener('click', async () => {
         const newDetails = detailsTextarea.value.trim();
-        await updateTaskDetails(task.id, newDetails);
+        saveBtn.disabled = true;
+        saveBtn.textContent = 'Saving...';
+        try {
+          await updateTaskDetails(task.id, newDetails);
+        } finally {
+          saveBtn.disabled = false;
+          saveBtn.textContent = 'Save';
+        }
       });
     }
 
@@ -276,10 +283,14 @@ async function updateTaskDetails(id, details) {
       },
       body: JSON.stringify({ details }),
     }));
-    if (!res.ok) throw new Error('Failed to update task details');
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || 'Failed to update task details');
+    }
     await fetchTasks();
   } catch (err) {
     console.error('Error updating task details:', err);
+    alert(err.message);
     await fetchTasks();
   }
 }
