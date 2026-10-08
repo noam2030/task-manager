@@ -48,27 +48,68 @@ function updateUserBadge() {
   }
 }
 
+const PROD_API_BASE = 'https://task-manager-608477010863.us-central1.run.app';
+const STAGING_API_BASE = 'https://task-manager-staging-608477010863.us-central1.run.app';
+
+function isStagingEnvironment() {
+  const hostname = window.location.hostname;
+  if (hostname.includes('staging')) {
+    return true;
+  }
+  if (hostname.includes('vercel.app')) {
+    const isProductionVercel = hostname === 'task-manager-ui-gamma-blond.vercel.app' ||
+      hostname === 'task-manager-ui.vercel.app';
+    return !isProductionVercel;
+  }
+  return false;
+}
+
+function getBackendBaseUrl() {
+  const hostname = window.location.hostname;
+  if (hostname === 'localhost' || hostname === '127.0.0.1') {
+    return window.location.origin;
+  }
+  if (isStagingEnvironment()) {
+    return STAGING_API_BASE;
+  }
+  return PROD_API_BASE;
+}
+
+function getApiUrl(path) {
+  const base = getBackendBaseUrl();
+  const separator = path.includes('?') ? '&' : '?';
+  return `${base}${path}${separator}userId=${encodeURIComponent(currentUserId)}`;
+}
+
+function updateApiLink() {
+  const apiLink = document.getElementById('apiLink');
+  const apiLinkLabel = document.getElementById('apiLinkLabel');
+  if (!apiLink) return;
+
+  const baseUrl = getBackendBaseUrl();
+  apiLink.href = `${baseUrl}/api/tasks?userId=${encodeURIComponent(currentUserId)}`;
+
+  if (apiLinkLabel) {
+    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+      apiLinkLabel.textContent = 'API (Local)';
+    } else if (isStagingEnvironment()) {
+      apiLinkLabel.textContent = 'API (Staging)';
+    } else {
+      apiLinkLabel.textContent = 'API (Prod)';
+    }
+  }
+  apiLink.title = `Backend API: ${baseUrl}/api/tasks`;
+}
+
 function switchUser() {
   const input = window.prompt('Enter username or identifier:', currentUserId);
   if (input !== null && input.trim() && input.trim() !== currentUserId) {
     currentUserId = input.trim();
     localStorage.setItem(USER_STORAGE_KEY, currentUserId);
     updateUserBadge();
+    updateApiLink();
     fetchTasks();
   }
-}
-
-function getApiUrl(path) {
-  const hostname = window.location.hostname;
-  const isVercelPreview = hostname.includes('vercel.app') &&
-    !hostname.includes('task-manager-ui-gamma-blond') &&
-    !hostname.startsWith('task-manager-ui.');
-  const base = isVercelPreview
-    ? 'https://task-manager-staging-608477010863.us-central1.run.app'
-    : '';
-
-  const separator = path.includes('?') ? '&' : '?';
-  return `${base}${path}${separator}userId=${encodeURIComponent(currentUserId)}`;
 }
 
 function getRequestOptions(options = {}) {
@@ -453,4 +494,5 @@ taskForm.addEventListener('submit', async (e) => {
 
 // Initialize on page load
 updateUserBadge();
+updateApiLink();
 fetchTasks();
