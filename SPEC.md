@@ -37,8 +37,8 @@ The application employs a lightweight monolithic client-server architecture with
 - **Client (Frontend)**: Static HTML5, modern CSS3, and vanilla JavaScript (Fetch API) served directly by the backend.
 - **Server (Backend)**: Lightweight Node.js Express server providing RESTful JSON APIs and serving static assets.
 - **Persistent Storage**:
-  - Cloud: Google Cloud Firestore (Native mode) collection `tasks` for durable, serverless NoSQL persistence.
-  - Local/Test: File-backed JSON store (`data/tasks.json`) or in-memory repository when Firestore is not configured or in unit test mode.
+  - Cloud: Google Cloud Firestore (Native mode) collection `tasks` for durable, serverless NoSQL persistence in project `task-manager-510913`.
+  - Local/Test: File-backed JSON store (`data/tasks.json`) or in-memory repository when Firestore is disabled or in unit test mode.
 - **Container**: Minimal Alpine-based Docker container exposing HTTP port 8080 (standard for Cloud Run).
 - **Deployment Platform**: Google Cloud Run in project `task-manager-510913`.
 
@@ -63,13 +63,15 @@ flowchart LR
 ## 6. Backend
 - **File Structure**:
   - `server.js`: Server bootstrap, Express configuration, middleware, and route mounting.
-  - `src/taskStore.js`: Task repository abstraction with Firestore integration, local file fallback, priority sorting logic, and CRUD operations.
+  - `src/taskStore.js`: Task repository abstraction with Firestore integration, local fallback, priority sorting logic, and CRUD operations.
   - `src/routes.js`: Express router handling HTTP endpoints with validation and error responses.
 - **Priority Ranking Algorithm**:
   - Priority weights: `High` = 1, `Medium` = 2, `Low` = 3.
   - Sorting comparator: Compare priority weight ascending; if weights are equal, sort `createdAt` descending.
-- **Persistence Handling**:
-  - When `USE_FIRESTORE=true` or running on GCP Cloud Run with project ID configured: writes and reads tasks from Firestore collection `tasks`.
+- **Persistence & Cloud Run Activation**:
+  - Firestore activation triggers when `USE_FIRESTORE === 'true'`, OR when running inside Google Cloud Run (`Boolean(process.env.K_SERVICE)`), unless explicitly disabled with `options.useFirestore === false` (used by unit tests).
+  - Default Firestore project ID is `task-manager-510913` (overridable via `GOOGLE_CLOUD_PROJECT`).
+  - Startup logs identify storage driver (`[TaskStore] Using Firestore (project: ...)` vs `[TaskStore] Using local file/memory store`).
   - When running locally without Firestore: persists to `data/tasks.json` or in-memory cache.
 
 ## 7. Frontend
@@ -130,8 +132,8 @@ All endpoints return JSON responses.
 - **Port**: `PORT` environment variable (defaults to `8080`).
 - **Node Environment**: `NODE_ENV` (defaults to `production` in container, `development` locally).
 - **Data File**: `DATA_FILE_PATH` (defaults to `./data/tasks.json` for local fallback).
-- **GCP Project**: `task-manager-510913` / `GOOGLE_CLOUD_PROJECT`.
-- **Persistence Driver**: `USE_FIRESTORE` (`true` to force Firestore, `false` to force local store).
+- **GCP Project**: `task-manager-510913` (defaults in code and set via `GOOGLE_CLOUD_PROJECT`).
+- **Persistence Driver**: `USE_FIRESTORE` (set to `true` on Cloud Run, or detected via `K_SERVICE`).
 - **GCP Region**: `us-central1`.
 
 ## 11. Testing
@@ -153,8 +155,8 @@ All endpoints return JSON responses.
 - **Google Cloud Infrastructure**:
   - Project ID: `task-manager-510913`
   - Cloud Firestore: Default database initialized in `us-central1`.
-  - Production Service: `task-manager` on Cloud Run.
-  - Staging Service: `task-manager-staging` on Cloud Run.
+  - Production Service: `task-manager` on Cloud Run with `--set-env-vars="USE_FIRESTORE=true,GOOGLE_CLOUD_PROJECT=task-manager-510913"`.
+  - Staging Service: `task-manager-staging` on Cloud Run with `--set-env-vars="USE_FIRESTORE=true,GOOGLE_CLOUD_PROJECT=task-manager-510913"`.
 - **GitHub Actions Workflows**:
   - `.github/workflows/ci.yml`: Runs `npm test` on all pull requests and commits to `main`.
   - `.github/workflows/deploy-staging.yml`: Deploys to `task-manager-staging` on PR.

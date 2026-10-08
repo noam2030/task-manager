@@ -11,18 +11,23 @@ const PRIORITY_ORDER = {
 
 export class TaskStore {
   constructor(options = {}) {
-    // If explicit useFirestore given, use it. Otherwise auto-detect Cloud Run or env flag
-    this.useFirestore = options.useFirestore ?? (
-      process.env.USE_FIRESTORE === 'true' ||
-      Boolean(process.env.K_SERVICE && process.env.GOOGLE_CLOUD_PROJECT)
-    );
+    const isExplicit = options.useFirestore !== undefined;
+    if (isExplicit) {
+      this.useFirestore = options.useFirestore;
+    } else {
+      this.useFirestore = (
+        process.env.USE_FIRESTORE === 'true' ||
+        Boolean(process.env.K_SERVICE)
+      );
+    }
+
     this.filePath = typeof options === 'string' ? options : (options.filePath ?? (process.env.DATA_FILE_PATH || './data/tasks.json'));
     this.tasks = [];
 
     if (this.useFirestore) {
-      this.db = new Firestore({
-        projectId: process.env.GOOGLE_CLOUD_PROJECT || 'task-manager-510913',
-      });
+      const projectId = process.env.GOOGLE_CLOUD_PROJECT || 'task-manager-510913';
+      console.log(`[TaskStore] Using Firestore (project: ${projectId})`);
+      this.db = new Firestore({ projectId });
       this.collection = this.db.collection('tasks');
     } else {
       this.load();

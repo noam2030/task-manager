@@ -5,3 +5,6 @@
 5. i want the data to be persisted
 6. confirm. (i already merged previous pull request)
 7. approved
+8. i dont see my tasks on firestore. they are not saved
+9. confirm
+10. merge
