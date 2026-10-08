@@ -15,3 +15,5 @@
 15. i meant to create new project in vercel. to deploy the ui part to vercel. in this project make the ui part deploy to vercel. connect vercel to the google cloud service
 16. confirm
 17. confirm
+18. add an option to make the task done. make an option to hide show done tasks. default is hide.
+19. confirm
