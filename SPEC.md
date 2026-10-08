@@ -1,7 +1,7 @@
 # Project Specification
 
 ## 1. Overview
-Task Manager is a minimal, high-efficiency web application designed to manage personal tasks. Users can create tasks, assign them an initial priority level (High, Medium, Low), edit or update the priority of any existing task at any time, toggle completion status, and remove tasks. The application automatically displays all tasks sorted according to their priority level, ensuring high-priority items are addressed first. The architecture is decoupled: the frontend UI is deployed to **Vercel** under the project **`task-manager-ui`**, while the backend REST API runs on **Google Cloud Run** in project `task-manager-510913` with persistent storage in **Google Cloud Firestore**.
+Task Manager is a minimal, high-efficiency web application designed to manage personal tasks. Users can create tasks, assign them an initial priority level (High, Medium, Low), edit or update the priority of any existing task at any time, mark tasks as done (completed), and toggle the visibility of completed tasks with the default set to **hidden**. The application automatically displays all tasks sorted according to their priority level, ensuring high-priority items are addressed first. The architecture is decoupled: the frontend UI is deployed to **Vercel** under the project **`task-manager-ui`**, while the backend REST API runs on **Google Cloud Run** in project `task-manager-510913` with persistent storage in **Google Cloud Firestore**.
 
 ## 2. Requirements
 - **Task Creation**: Users can create tasks with a title and an assigned priority (`High`, `Medium`, or `Low`).
@@ -11,28 +11,37 @@ Task Manager is a minimal, high-efficiency web application designed to manage pe
   2. `Medium`
   3. `Low` (lowest priority)
   Ties are ordered by creation timestamp in descending order (most recently created first). When a task's priority is modified, the list automatically updates to reflect the new sorting order.
-- **Task Status Toggle**: Users can mark tasks as completed or incomplete.
+- **Task Completion (Mark as Done)**: Users can mark tasks as completed (done) or incomplete (pending).
+- **Hide / Show Done Tasks Toggle**:
+  - The application provides a user-facing control to toggle between hiding and showing completed tasks.
+  - The default state is **hide done tasks** (`showCompleted = false`).
+  - When hidden (default), completed tasks are excluded from the main task list view.
+  - When shown, completed tasks are displayed in the list with completed styling (strikethrough text and checked state).
+  - The toggle indicates how many completed tasks exist (e.g. "Show done (3)").
 - **Task Deletion**: Users can remove existing tasks.
 - **Decoupled Frontend Deployment**: The UI part of the application is deployed to Vercel as project `task-manager-ui`.
 - **Backend Cloud Deployment & Persistence**: The backend API is deployed to Google Cloud Run (`task-manager-510913`) and persists task data in Google Cloud Firestore (Native mode).
 - **Vercel-to-GCP Integration**: Vercel transparently proxies `/api/*` traffic to the Google Cloud Run service, avoiding cross-origin complexities.
 - **Minimal Codebase**: The solution uses minimal, readable, dependency-light code without unnecessary boilerplate or heavy frameworks.
-- **Automated Testing**: Comprehensive unit and API tests verifying task sorting, creation, priority editing, updating, deletion, and storage abstraction.
+- **Automated Testing**: Comprehensive unit and API tests verifying task sorting, creation, priority editing, completion toggling, deletion, and storage abstraction.
 - **CI/CD Pipeline**: GitHub Actions workflows for automated testing and deployments.
 
 ## 3. User Experience
-- **Header & Overview**: Clean header displaying the application title and a task count summary.
+- **Header & Overview**: Clean header displaying the application title and a task count summary (total, pending, completed).
 - **Input Form**: Single-line form with an input for task title, a priority select dropdown (`High`, `Medium`, `Low`), and an "Add Task" button.
+- **Filter Controls**:
+  - A toggle button in the list header labeled `"Show done (N)"` / `"Hide done"` to switch visibility of completed tasks.
+  - Default view hides completed tasks so users can focus on pending work.
 - **Task List View**:
-  - Displays tasks sorted by priority (`High` -> `Medium` -> `Low`).
+  - Displays visible tasks sorted by priority (`High` -> `Medium` -> `Low`).
   - Interactive priority selector badge on each task item allowing instantaneous switching between `High`, `Medium`, and `Low` with corresponding badge styling:
     - `High`: Red / Coral badge
     - `Medium`: Amber / Orange badge
     - `Low`: Green / Teal badge
-  - Immediate re-sorting of the task list upon priority change so reprioritized tasks shift to their correct sorted position.
-  - Interactive checkbox to toggle completion status with strikethrough styling for completed tasks.
+  - Interactive checkbox / done button to mark task as completed (done). When marked as done, if completed tasks are hidden, the task is smoothly removed from the active view.
+  - Completed tasks when visible display with strikethrough title and subdued text color.
   - Delete button (`✕`) with immediate optimistic/real-time update.
-  - Empty state displaying an encouraging message when no tasks are present.
+  - Empty state displaying a friendly message when no pending tasks remain or no tasks exist.
 - **Responsive Design**: Fast, modern, mobile-friendly interface designed with accessible semantic HTML and CSS variables.
 
 ## 4. Architecture
@@ -77,11 +86,14 @@ flowchart LR
 
 ## 7. Frontend
 - **File Structure**:
-  - `public/index.html`: Accessible semantic markup with task form, priority selector, and task list container.
-  - `public/style.css`: Modern, clean CSS using CSS custom properties (variables), Flexbox, responsive layout.
-  - `public/app.js`: Client-side logic handling form submission, priority changing, calling `/api/tasks`, rendering cards, and handling updates/deletions.
+  - `public/index.html`: Accessible semantic markup with task form, priority selector, show/hide done tasks toggle, and task list container.
+  - `public/style.css`: Modern, clean CSS using CSS custom properties (variables), Flexbox, responsive layout, filter toggle button.
+  - `public/app.js`: Client-side logic handling form submission, priority changing, completion toggling, filtering hidden completed tasks, calling `/api/tasks`, rendering cards, and handling updates/deletions.
   - `vercel.json`: Vercel project configuration linking `public/` directory and proxying `/api/*` to Cloud Run.
-- **State Handling**: Fetches task list from `/api/tasks` on page load, and after any mutation (create, complete, priority change, delete) re-renders the sorted list.
+- **State Handling**:
+  - `showCompleted`: boolean flag, defaults to `false` (hide done tasks).
+  - Toggling this flag re-filters and re-renders the list without extra network roundtrips.
+  - Fetches task list from `/api/tasks` on page load, and after any mutation (create, complete, priority change, delete) re-renders the sorted list according to `showCompleted`.
 
 ## 8. Data Model
 ### Task Entity Schema
@@ -113,11 +125,11 @@ All endpoints return JSON responses.
    - Response `201 Created`: Created task object.
    - Response `400 Bad Request`: Validation error if `title` is missing/empty or `priority` is not in `['High', 'Medium', 'Low']`.
 3. `PATCH /api/tasks/:id`
-   - Description: Updates a task's `completed` status or `priority` (`High`, `Medium`, `Low`) or `title`.
+   - Description: Updates a task's `completed` status (`true` / `false`) or `priority` (`High`, `Medium`, `Low`) or `title`.
    - Request Body:
      ```json
      {
-       "priority": "High"
+       "completed": true
      }
      ```
    - Response `200 OK`: Updated task object.
@@ -145,6 +157,7 @@ All endpoints return JSON responses.
 - **Unit & Integration Test Suite** (`test/taskStore.test.js`, `test/api.test.js`):
   - Verification of priority ordering: `High` appears before `Medium`, `Medium` appears before `Low`.
   - Verification of priority modification: changing a task's priority (e.g., `Low` to `High`) moves it to the correct sorted position.
+  - Verification of task completion: marking a task completed toggles `completed: true`.
   - Secondary sorting: equal priority sorted newest first.
   - Creation, completion toggle, and deletion flows.
   - Validation: reject invalid priority values or blank titles.

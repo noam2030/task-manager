@@ -6,13 +6,18 @@ const emptyState = document.getElementById('emptyState');
 const totalCount = document.getElementById('totalCount');
 const pendingCount = document.getElementById('pendingCount');
 const completedCount = document.getElementById('completedCount');
+const toggleCompletedBtn = document.getElementById('toggleCompletedBtn');
+const hiddenDoneCount = document.getElementById('hiddenDoneCount');
+
+let allTasks = [];
+let showCompleted = false; // Default: hide done tasks
 
 async function fetchTasks() {
   try {
     const res = await fetch('/api/tasks');
     if (!res.ok) throw new Error('Failed to fetch tasks');
-    const tasks = await res.json();
-    renderTasks(tasks);
+    allTasks = await res.json();
+    renderTasks(allTasks);
   } catch (err) {
     console.error('Error fetching tasks:', err);
   }
@@ -26,20 +31,45 @@ function updateStats(tasks) {
   totalCount.textContent = total;
   pendingCount.textContent = pending;
   completedCount.textContent = completed;
+
+  if (toggleCompletedBtn) {
+    if (showCompleted) {
+      toggleCompletedBtn.textContent = 'Hide done';
+      toggleCompletedBtn.classList.add('active');
+      toggleCompletedBtn.setAttribute('aria-pressed', 'true');
+    } else {
+      toggleCompletedBtn.innerHTML = `Show done (${completed})`;
+      toggleCompletedBtn.classList.remove('active');
+      toggleCompletedBtn.setAttribute('aria-pressed', 'false');
+    }
+  }
 }
 
 function renderTasks(tasks) {
+  allTasks = tasks;
   updateStats(tasks);
   taskList.innerHTML = '';
 
-  if (tasks.length === 0) {
+  const completed = tasks.filter((t) => t.completed).length;
+  const visibleTasks = showCompleted ? tasks : tasks.filter((t) => !t.completed);
+
+  if (visibleTasks.length === 0) {
     emptyState.hidden = false;
+    const titleEl = emptyState.querySelector('.empty-title');
+    const subEl = emptyState.querySelector('.empty-sub');
+    if (tasks.length === 0) {
+      if (titleEl) titleEl.textContent = 'All tasks done!';
+      if (subEl) subEl.textContent = 'Add a new task above with its priority to get started.';
+    } else {
+      if (titleEl) titleEl.textContent = 'No pending tasks!';
+      if (subEl) subEl.textContent = `${completed} completed task${completed === 1 ? '' : 's'} hidden. Click 'Show done' to view them.`;
+    }
     return;
   }
 
   emptyState.hidden = true;
 
-  tasks.forEach((task) => {
+  visibleTasks.forEach((task) => {
     const li = document.createElement('li');
     li.className = `task-item ${task.completed ? 'completed' : ''}`;
     li.dataset.id = task.id;
@@ -52,7 +82,8 @@ function renderTasks(tasks) {
           type="checkbox"
           class="task-checkbox"
           ${task.completed ? 'checked' : ''}
-          aria-label="Mark task '${escapeHtml(task.title)}' as completed"
+          aria-label="Mark task '${escapeHtml(task.title)}' as ${task.completed ? 'incomplete' : 'done'}"
+          title="${task.completed ? 'Mark as incomplete' : 'Mark as done'}"
         />
         <span class="task-title">${escapeHtml(task.title)}</span>
       </div>
@@ -161,6 +192,13 @@ async function deleteTask(id) {
     console.error(err);
     await fetchTasks();
   }
+}
+
+if (toggleCompletedBtn) {
+  toggleCompletedBtn.addEventListener('click', () => {
+    showCompleted = !showCompleted;
+    renderTasks(allTasks);
+  });
 }
 
 taskForm.addEventListener('submit', async (e) => {

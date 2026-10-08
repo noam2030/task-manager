@@ -52,12 +52,17 @@
 
       <section class="task-list-section">
         <div class="section-header">
-          <h2>Tasks Sorted by Priority</h2>
-          <span class="legend">
-            <span class="legend-badge badge-high">High</span>
-            <span class="legend-badge badge-medium">Medium</span>
-            <span class="legend-badge badge-low">Low</span>
-          </span>
+          <div class="header-titles">
+            <h2>Tasks Sorted by Priority</h2>
+            <span class="legend">
+              <span class="legend-badge badge-high">High</span>
+              <span class="legend-badge badge-medium">Medium</span>
+              <span class="legend-badge badge-low">Low</span>
+            </span>
+          </div>
+          <button type="button" class="btn btn-filter" id="toggleCompletedBtn" aria-pressed="false">
+            Show done (<span id="hiddenDoneCount">0</span>)
+          </button>
         </div>
 
         <ul class="task-list" id="taskList" aria-live="polite">
