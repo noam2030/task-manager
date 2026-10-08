@@ -1,6 +1,7 @@
 const taskForm = document.getElementById('taskForm');
 const taskTitleInput = document.getElementById('taskTitle');
 const taskPrioritySelect = document.getElementById('taskPriority');
+const taskDetailsInput = document.getElementById('taskDetails');
 const taskList = document.getElementById('taskList');
 const emptyState = document.getElementById('emptyState');
 const totalCount = document.getElementById('totalCount');
@@ -131,36 +132,91 @@ function renderTasks(tasks) {
     li.dataset.id = task.id;
 
     const priorityClass = `badge-${task.priority.toLowerCase()}`;
+    const taskDetails = (task.details || '').trim();
+    const hasDetails = Boolean(taskDetails);
 
     li.innerHTML = `
-      <div class="task-left">
-        <input
-          type="checkbox"
-          class="task-checkbox"
-          ${task.completed ? 'checked' : ''}
-          aria-label="Mark task '${escapeHtml(task.title)}' as ${task.completed ? 'incomplete' : 'done'}"
-          title="${task.completed ? 'Mark as incomplete' : 'Mark as done'}"
-        />
-        <span class="task-title">${escapeHtml(task.title)}</span>
-      </div>
-      <div class="task-right">
-        <select
-          class="priority-select ${priorityClass}"
-          aria-label="Change priority for task '${escapeHtml(task.title)}'"
-          title="Change priority"
-        >
-          <option value="High" ${task.priority === 'High' ? 'selected' : ''}>High</option>
-          <option value="Medium" ${task.priority === 'Medium' ? 'selected' : ''}>Medium</option>
-          <option value="Low" ${task.priority === 'Low' ? 'selected' : ''}>Low</option>
-        </select>
-        <button
-          type="button"
-          class="delete-btn"
-          aria-label="Delete task '${escapeHtml(task.title)}'"
-          title="Delete task"
-        >✕</button>
+      <div class="task-main">
+        <div class="task-left">
+          <input
+            type="checkbox"
+            class="task-checkbox"
+            ${task.completed ? 'checked' : ''}
+            aria-label="Mark task '${escapeHtml(task.title)}' as ${task.completed ? 'incomplete' : 'done'}"
+            title="${task.completed ? 'Mark as incomplete' : 'Mark as done'}"
+          />
+          <div class="task-content">
+            <span class="task-title">${escapeHtml(task.title)}</span>
+            <div class="task-details-view">
+              ${hasDetails ? `<div class="task-details-text">${escapeHtml(taskDetails)}</div>` : ''}
+              <button
+                type="button"
+                class="btn-details-action"
+                aria-label="${hasDetails ? 'Edit details for' : 'Add details to'} task '${escapeHtml(task.title)}'"
+              >
+                ${hasDetails ? '✎ Edit details' : '＋ Add details'}
+              </button>
+            </div>
+            <div class="task-details-editor" hidden>
+              <textarea
+                class="details-edit-textarea"
+                rows="2"
+                placeholder="Add details, notes, or ongoing progress context..."
+                aria-label="Edit details for task '${escapeHtml(task.title)}'"
+              >${escapeHtml(taskDetails)}</textarea>
+              <div class="details-edit-actions">
+                <button type="button" class="btn-details-save">Save</button>
+                <button type="button" class="btn-details-cancel">Cancel</button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="task-right">
+          <select
+            class="priority-select ${priorityClass}"
+            aria-label="Change priority for task '${escapeHtml(task.title)}'"
+            title="Change priority"
+          >
+            <option value="High" ${task.priority === 'High' ? 'selected' : ''}>High</option>
+            <option value="Medium" ${task.priority === 'Medium' ? 'selected' : ''}>Medium</option>
+            <option value="Low" ${task.priority === 'Low' ? 'selected' : ''}>Low</option>
+          </select>
+          <button
+            type="button"
+            class="delete-btn"
+            aria-label="Delete task '${escapeHtml(task.title)}'"
+            title="Delete task"
+          >✕</button>
+        </div>
       </div>
     `;
+
+    // Inline details editor listeners
+    const detailsView = li.querySelector('.task-details-view');
+    const detailsEditor = li.querySelector('.task-details-editor');
+    const detailsActionBtn = li.querySelector('.btn-details-action');
+    const detailsTextarea = li.querySelector('.details-edit-textarea');
+    const saveBtn = li.querySelector('.btn-details-save');
+    const cancelBtn = li.querySelector('.btn-details-cancel');
+
+    if (detailsActionBtn && detailsEditor && detailsView) {
+      detailsActionBtn.addEventListener('click', () => {
+        detailsView.hidden = true;
+        detailsEditor.hidden = false;
+        detailsTextarea.focus();
+      });
+
+      cancelBtn.addEventListener('click', () => {
+        detailsTextarea.value = taskDetails;
+        detailsEditor.hidden = true;
+        detailsView.hidden = false;
+      });
+
+      saveBtn.addEventListener('click', async () => {
+        const newDetails = detailsTextarea.value.trim();
+        await updateTaskDetails(task.id, newDetails);
+      });
+    }
 
     // Priority change listener
     const prioritySelect = li.querySelector('.priority-select');
@@ -190,7 +246,7 @@ function escapeHtml(str) {
   return div.innerHTML;
 }
 
-async function createTask(title, priority) {
+async function createTask(title, priority, details = '') {
   try {
     const url = getApiUrl('/api/tasks');
     const res = await fetch(url, getRequestOptions({
@@ -198,7 +254,7 @@ async function createTask(title, priority) {
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ title, priority }),
+      body: JSON.stringify({ title, priority, details }),
     }));
     if (!res.ok) {
       const err = await res.json();
@@ -207,6 +263,24 @@ async function createTask(title, priority) {
     await fetchTasks();
   } catch (err) {
     alert(err.message);
+  }
+}
+
+async function updateTaskDetails(id, details) {
+  try {
+    const url = getApiUrl(`/api/tasks/${id}`);
+    const res = await fetch(url, getRequestOptions({
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ details }),
+    }));
+    if (!res.ok) throw new Error('Failed to update task details');
+    await fetchTasks();
+  } catch (err) {
+    console.error('Error updating task details:', err);
+    await fetchTasks();
   }
 }
 
@@ -276,10 +350,14 @@ taskForm.addEventListener('submit', async (e) => {
   e.preventDefault();
   const title = taskTitleInput.value.trim();
   const priority = taskPrioritySelect.value;
+  const details = taskDetailsInput ? taskDetailsInput.value.trim() : '';
   if (!title) return;
 
-  await createTask(title, priority);
+  await createTask(title, priority, details);
   taskTitleInput.value = '';
+  if (taskDetailsInput) {
+    taskDetailsInput.value = '';
+  }
   taskTitleInput.focus();
 });
 

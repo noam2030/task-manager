@@ -29,30 +29,43 @@
     <main>
       <section class="task-form-card">
         <form id="taskForm" class="task-form" autocomplete="off">
-          <div class="input-group">
-            <label for="taskTitle" class="visually-hidden">Task title</label>
-            <input
-              type="text"
-              id="taskTitle"
-              name="title"
-              placeholder="What needs to be done?"
-              required
-              maxlength="200"
-            />
+          <div class="form-row form-row-main">
+            <div class="input-group">
+              <label for="taskTitle" class="visually-hidden">Task title</label>
+              <input
+                type="text"
+                id="taskTitle"
+                name="title"
+                placeholder="What needs to be done?"
+                required
+                maxlength="200"
+              />
+            </div>
+
+            <div class="priority-group">
+              <label for="taskPriority" class="visually-hidden">Priority</label>
+              <select id="taskPriority" name="priority" required>
+                <option value="High">Priority: High</option>
+                <option value="Medium" selected>Priority: Medium</option>
+                <option value="Low">Priority: Low</option>
+              </select>
+            </div>
+
+            <button type="submit" class="btn btn-primary" id="submitBtn">
+              Add Task
+            </button>
           </div>
 
-          <div class="priority-group">
-            <label for="taskPriority" class="visually-hidden">Priority</label>
-            <select id="taskPriority" name="priority" required>
-              <option value="High">Priority: High</option>
-              <option value="Medium" selected>Priority: Medium</option>
-              <option value="Low">Priority: Low</option>
-            </select>
+          <div class="form-row form-row-details">
+            <label for="taskDetails" class="visually-hidden">Task details and ongoing notes</label>
+            <textarea
+              id="taskDetails"
+              name="details"
+              placeholder="Add details, notes, or ongoing progress context (optional)..."
+              rows="2"
+              class="task-details-textarea"
+            ></textarea>
           </div>
-
-          <button type="submit" class="btn btn-primary" id="submitBtn">
-            Add Task
-          </button>
         </form>
       </section>
 

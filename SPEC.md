@@ -1,12 +1,13 @@
 # Project Specification
 
 ## 1. Overview
-Task Manager is a minimal, high-efficiency web application designed to manage personal tasks on a per-user basis. Each user has their own isolated workspace where tasks are created, stored, and managed independently. Users can create tasks, assign them an initial priority level (High, Medium, Low), edit or update task priority at any time, mark tasks as done (completed), and toggle the visibility of completed tasks with the default set to **hidden**. The application automatically displays each user's tasks sorted according to their priority level, ensuring high-priority items are addressed first. The architecture is decoupled: the frontend UI is deployed to **Vercel** under the project **`task-manager-ui`**, while the backend REST API runs on **Google Cloud Run** in project `task-manager-510913` with persistent, user-scoped storage in **Google Cloud Firestore**.
+Task Manager is a minimal, high-efficiency web application designed to manage personal tasks on a per-user basis. Each user has their own isolated workspace where tasks are created, stored, and managed independently. Users can create tasks, assign them an initial priority level (High, Medium, Low), add optional detailed context or instructions (`details`), edit or update task priority and details at any time, mark tasks as done (completed), and toggle the visibility of completed tasks with the default set to **hidden**. The application automatically displays each user's tasks sorted according to their priority level, ensuring high-priority items are addressed first. The architecture is decoupled: the frontend UI is deployed to **Vercel** under the project **`task-manager-ui`**, while the backend REST API runs on **Google Cloud Run** in project `task-manager-510913` with persistent, user-scoped storage in **Google Cloud Firestore**.
 
 ## 2. Requirements
 - **Per-User Isolation**: All task creation, storage, retrieval, modification, and deletion are strictly scoped to the active user (`userId`). User A cannot access or modify User B's tasks.
 - **User Identity & Switching**: Users identify themselves by a username or identifier. The frontend allows switching users, persisting the active user in local storage.
-- **Task Creation**: Users can create tasks with a title and an assigned priority (`High`, `Medium`, or `Low`) within their account.
+- **Task Creation**: Users can create tasks with a title, an optional details/notes field, and an assigned priority (`High`, `Medium`, or `Low`) within their account.
+- **Task Details (Creation & Ongoing Editing)**: Users can attach detailed context/notes during task creation and edit the details at any time later to capture ongoing information and progress.
 - **Priority Modification**: Users can change the priority level (`High`, `Medium`, or `Low`) of any existing task directly from their task list.
 - **Priority-Based Sorting**: The user's task list must always be ordered primarily by priority level:
   1. `High` (highest priority)
@@ -32,7 +33,7 @@ Task Manager is a minimal, high-efficiency web application designed to manage pe
 ## 3. User Experience
 - **Header & User Profile**: Clean header displaying the application title, the active user badge (e.g. `👤 noam`), a `"Switch User"` button, and a task count summary (total, pending, completed).
 - **User Selection / Switch Modal**: Intuitive prompt to enter or change the active username.
-- **Input Form**: Single-line form with an input for task title, a priority select dropdown (`High`, `Medium`, `Low`), and an "Add Task" button.
+- **Input Form**: Single-line form with an input for task title, an optional details/notes field for extended context, a priority select dropdown (`High`, `Medium`, `Low`), and an "Add Task" button.
 - **Filter Controls**:
   - A toggle button in the list header labeled `"Show done (N)"` / `"Hide done"` to switch visibility of completed tasks.
   - Default view hides completed tasks so users can focus on pending work.
@@ -44,6 +45,9 @@ Task Manager is a minimal, high-efficiency web application designed to manage pe
     - `Low`: Green / Teal badge
   - Interactive checkbox / done button to mark task as completed (done). When marked as done, if completed tasks are hidden, the task is smoothly removed from the active view.
   - Completed tasks when visible display with strikethrough title and subdued text color.
+  - **Task Details & Inline Editing**:
+    - Each task displays its details below the title. If no details were initially provided, a clean `+ Add details` action is shown.
+    - Users can view and edit the details directly on the card with an inline textarea and Save/Cancel controls, enabling continuous logging of context and progress.
   - Delete button (`✕`) with immediate optimistic/real-time update.
   - Empty state displaying a friendly message when no pending tasks remain or no tasks exist for the active user.
 - **Responsive Design**: Fast, modern, mobile-friendly interface designed with accessible semantic HTML and CSS variables.
@@ -108,6 +112,7 @@ flowchart LR
 | `userId` | `string` | Identifier of the owning user |
 | `title` | `string` | Task title / description (non-empty, trimmed) |
 | `priority` | `string` | Enum: `'High' \| 'Medium' \| 'Low'` |
+| `details` | `string` | Optional details, instructions, or ongoing progress context (string, defaults to `""`) |
 | `completed` | `boolean` | Status flag (`false` by default) |
 | `createdAt` | `string` | ISO 8601 timestamp string |
 | `updatedAt` | `string` | ISO 8601 timestamp string |
@@ -120,7 +125,7 @@ All endpoints accept user identification via `X-User-Id` header or `?userId=<use
    - Description: Retrieves all tasks for the requesting user, sorted by priority (`High` -> `Medium` -> `Low`), then by newest `createdAt`.
    - Headers: `X-User-Id: <userId>`
    - Query Parameters: `userId=<userId>` (optional fallback)
-   - Response `200 OK`: `[{ "id": "...", "userId": "...", "title": "...", "priority": "High", "completed": false, ... }]`
+   - Response `200 OK`: `[{ "id": "...", "userId": "...", "title": "...", "priority": "High", "details": "...", "completed": false, ... }]`
 2. `POST /api/tasks`
    - Description: Creates a new task for the requesting user.
    - Headers: `X-User-Id: <userId>`
@@ -129,19 +134,20 @@ All endpoints accept user identification via `X-User-Id` header or `?userId=<use
      ```json
      {
        "title": "Fix login bug",
-       "priority": "High"
+       "priority": "High",
+       "details": "Investigate session expiration in Safari"
      }
      ```
-   - Response `201 Created`: Created task object with `userId`.
+   - Response `201 Created`: Created task object with `userId` and `details`.
    - Response `400 Bad Request`: Validation error if `title` is missing/empty or `priority` is invalid.
 3. `PATCH /api/tasks/:id`
-   - Description: Updates a task's `completed` status (`true` / `false`), `priority`, or `title` for the requesting user.
+   - Description: Updates a task's `completed` status (`true` / `false`), `priority`, `title`, or `details` for the requesting user.
    - Headers: `X-User-Id: <userId>`
    - Query Parameters: `userId=<userId>` (optional fallback)
    - Request Body:
      ```json
      {
-       "completed": true
+       "details": "Root cause confirmed in middleware token validation"
      }
      ```
    - Response `200 OK`: Updated task object.
@@ -174,6 +180,7 @@ All endpoints accept user identification via `X-User-Id` header or `?userId=<use
   - Verification that User B cannot modify or delete User A's tasks.
   - Verification of priority ordering: `High` appears before `Medium`, `Medium` appears before `Low`.
   - Verification of priority modification and completion status toggles.
+  - Verification of task details: creation with details, editing details via PATCH, and persistence.
   - Health check endpoint verification.
   - CORS header verification for cross-domain requests (including `X-User-Id` allowance).
   - Tests run offline with zero external database dependencies.

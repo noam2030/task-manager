@@ -114,4 +114,34 @@ test('TaskStore - per-user isolation', async () => {
   assert.equal((await store.getTasks('user-beta')).length, 0);
 });
 
+test('TaskStore - task details creation and update', async () => {
+  const store = new TaskStore({ filePath: '', useFirestore: false });
+
+  // Creation with details
+  const taskWithDetails = await store.createTask('user-details', {
+    title: 'Deploy microservice',
+    priority: 'High',
+    details: 'Verify environment variables and IAM role permissions first',
+  });
+  assert.equal(taskWithDetails.details, 'Verify environment variables and IAM role permissions first');
+
+  // Creation without details defaults to empty string
+  const taskWithoutDetails = await store.createTask('user-details', {
+    title: 'Review pull request',
+    priority: 'Medium',
+  });
+  assert.equal(taskWithoutDetails.details, '');
+
+  // Update details later (ongoing information)
+  const updatedTask = await store.updateTask('user-details', taskWithDetails.id, {
+    details: 'Step 1 complete. Now verifying staging URL and SSL certificate.',
+  });
+  assert.equal(updatedTask.details, 'Step 1 complete. Now verifying staging URL and SSL certificate.');
+
+  // Fetch tasks and ensure details are persisted
+  const tasks = await store.getTasks('user-details');
+  const found = tasks.find((t) => t.id === taskWithDetails.id);
+  assert.equal(found.details, 'Step 1 complete. Now verifying staging URL and SSL certificate.');
+});
+
 
