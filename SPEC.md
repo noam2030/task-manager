@@ -109,12 +109,14 @@ flowchart LR
 - **File Structure**:
   - `public/index.html`: Accessible semantic markup with top bar external navigation links (GitHub and Backend API), user profile pill, task form, priority selector, show/hide done tasks toggle, and task list container.
   - `public/style.css`: Modern, clean CSS using CSS custom properties (variables), Flexbox, top bar link styles, user pill styling, responsive layout.
-  - `public/app.js`: Client-side logic managing `currentUserId`, attaching both `X-User-Id` header and `?userId=<userId>` query parameter on all requests with `cache: 'no-store'`, handling user switching, task creation, priority changing, completion toggling, filtering, rendering cards, and handling deletions. Dynamically targets staging backend `https://task-manager-staging-289332143182.us-central1.run.app` when deployed on Vercel preview or staging domains, and targets production backend `https://task-manager-289332143182.us-central1.run.app` when deployed on production. Configures the top-bar Backend API link accordingly.
+  - `public/app.js`: Client-side logic managing `currentUserId`, attaching both `X-User-Id` header and `?userId=<userId>` query parameter on all requests with `cache: 'no-store'`, handling user switching, task creation, priority changing, completion toggling, filtering, rendering cards, and handling deletions. Dynamically targets staging backend `https://task-manager-staging-289332143182.us-central1.run.app` when deployed on Vercel preview or staging domains, and targets production backend `https://task-manager-289332143182.us-central1.run.app` when deployed on production. Configures the top-bar Backend API link accordingly. Provides descriptive error handling and diagnostic reporting if the backend cannot be reached.
   - `vercel.json`: Vercel project configuration linking `public/` directory and proxying `/api/*` to the appropriate Cloud Run service.
 - **State Handling**:
   - `currentUserId`: string stored in `localStorage` (defaults to `'noam'`).
   - `showCompleted`: boolean flag, defaults to `false` (hide done tasks).
   - Toggling user re-fetches and renders tasks for the newly selected user.
+- **Network Error & Resilience**:
+  - Client operations (`fetchTasks`, `createTask`, `updateTaskDetails`, `toggleTask`, `deleteTask`) include resilient error handling providing user-friendly diagnostic notifications detailing the target endpoint if connectivity fails rather than unhandled or generic browser `'Failed to fetch'` exceptions.
 
 ## 8. Data Model
 ### Task Entity Schema
