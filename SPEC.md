@@ -1,7 +1,7 @@
 # Project Specification
 
 ## 1. Overview
-Task Manager is a minimal, high-efficiency web application designed to manage personal tasks on a per-user basis. Each user has their own isolated workspace where tasks are created, stored, and managed independently. Users can create tasks, assign them an initial priority level (High, Medium, Low), add optional detailed context or instructions (`details`), edit or update task priority and details at any time, mark tasks as done (completed), and toggle the visibility of completed tasks with the default set to **hidden**. The application automatically displays each user's tasks sorted according to their priority level, ensuring high-priority items are addressed first. The architecture is decoupled: the frontend UI is deployed to **Vercel** under the project **`task-manager-ui`**, while the backend REST API runs on **Google Cloud Run** in project `task-manager-510913` with persistent, user-scoped storage in **Google Cloud Firestore**.
+Task Manager is a minimal, high-efficiency web application designed to manage personal tasks on a per-user basis. Each user has their own isolated workspace where tasks are created, stored, and managed independently. Users can create tasks, assign them an initial priority level (High, Medium, Low), add optional detailed context or instructions (`details`), edit or update task priority and details at any time, mark tasks as done (completed), and toggle the visibility of completed tasks with the default set to **hidden**. The application automatically displays each user's tasks sorted according to their priority level, ensuring high-priority items are addressed first. The architecture is decoupled: the frontend UI is deployed to **Vercel** under the project **`task-manager-ui`**, while the backend REST API runs on **Google Cloud Run** in project `ai-learning-499409` with persistent, user-scoped storage in **Google Cloud Firestore**.
 
 ## 2. Requirements
 - **Per-User Isolation**: All task creation, storage, retrieval, modification, and deletion are strictly scoped to the active user (`userId`). User A cannot access or modify User B's tasks.
@@ -13,8 +13,8 @@ Task Manager is a minimal, high-efficiency web application designed to manage pe
   - The GitHub link directs to `https://github.com/noam2030/task-manager` and opens in a new tab.
   - The Backend API link dynamically points to the active environment's `/api/tasks` endpoint and opens in a new tab.
 - **Environment-Aware API Resolution (Staging vs Production)**:
-  - Staging Vercel deployments (preview domains on `*.vercel.app` or hostnames containing `staging`) strictly use the Staging Cloud Run backend: `https://task-manager-staging-608477010863.us-central1.run.app`.
-  - Production Vercel deployments (`https://task-manager-ui-gamma-blond.vercel.app`) strictly use the Production Cloud Run backend: `https://task-manager-608477010863.us-central1.run.app`.
+  - Staging Vercel deployments (preview domains on `*.vercel.app` or hostnames containing `staging`) strictly use the Staging Cloud Run backend: `https://task-manager-staging-289332143182.us-central1.run.app`.
+  - Production Vercel deployments (`https://task-manager-ui-gamma-blond.vercel.app`) strictly use the Production Cloud Run backend: `https://task-manager-289332143182.us-central1.run.app`.
   - Local development environments (`localhost`, `127.0.0.1`) route to the local origin (`http://localhost:8080`).
 - **Priority Modification**: Users can change the priority level (`High`, `Medium`, or `Low`) of any existing task directly from their task list.
 - **Priority-Based Sorting**: The user's task list must always be ordered primarily by priority level:
@@ -31,7 +31,7 @@ Task Manager is a minimal, high-efficiency web application designed to manage pe
   - The toggle indicates how many completed tasks exist (e.g. "Show done (3)").
 - **Task Deletion**: Users can remove existing tasks belonging to their account.
 - **Decoupled Frontend Deployment**: The UI part of the application is deployed to Vercel as project `task-manager-ui`.
-- **Backend Cloud Deployment & Persistence**: The backend API is deployed to Google Cloud Run (`task-manager-510913`) and persists task data per-user in Google Cloud Firestore (Native mode).
+- **Backend Cloud Deployment & Persistence**: The backend API is deployed to Google Cloud Run (`ai-learning-499409`) and persists task data per-user in Google Cloud Firestore (Native mode).
 - **Vercel-to-GCP Integration**: Vercel transparently proxies `/api/*` traffic to the Google Cloud Run service, avoiding cross-origin complexities.
 - **Minimal Codebase**: The solution uses minimal, readable, dependency-light code without unnecessary boilerplate or heavy frameworks.
 - **Automated Testing**: Comprehensive unit and API tests verifying user data isolation, task sorting, creation, priority editing, completion toggling, deletion, and storage abstraction.
@@ -69,7 +69,7 @@ The application employs a decoupled modern web architecture with per-user data p
 - **Frontend (Vercel)**: Static HTML5, modern CSS3, and vanilla JavaScript hosted globally on Vercel (`task-manager-ui`), attaching `X-User-Id` to all API requests.
 - **Reverse Proxy / Rewrites**: `vercel.json` rewrites `/api/*` requests to the Google Cloud Run backend.
 - **Backend (Google Cloud Run)**: Lightweight Node.js Express server providing RESTful JSON APIs with user extraction and CORS support.
-- **Persistent Storage**: Google Cloud Firestore (Native mode) with tasks stored under `users/{userId}/tasks` (or scoped by `userId`) in `task-manager-510913`.
+- **Persistent Storage**: Google Cloud Firestore (Native mode) with tasks stored under `users/{userId}/tasks` (or scoped by `userId`) in `ai-learning-499409`.
 - **Local/Test Environment**: In-memory / file-backed JSON store partitioned by `userId` for local development and offline automated testing.
 
 ```mermaid
@@ -85,7 +85,7 @@ flowchart LR
 - **Database & Persistence**: Google Cloud Firestore (`@google-cloud/firestore`) with per-user collections and local fallback
 - **Frontend**: Vanilla HTML5, CSS3, ES6 JavaScript (zero build step)
 - **Frontend Hosting**: Vercel (Project: `task-manager-ui`)
-- **Backend Hosting**: Google Cloud Run (Project: `task-manager-510913`)
+- **Backend Hosting**: Google Cloud Run (Project: `ai-learning-499409`)
 - **Test Framework**: Node.js native test runner (`node:test`) and assertion library (`node:assert`)
 - **Containerization**: Docker (Node Alpine base image)
 - **CI/CD & Version Control**: Git, GitHub repository (`task-manager`), and GitHub Actions
@@ -109,7 +109,7 @@ flowchart LR
 - **File Structure**:
   - `public/index.html`: Accessible semantic markup with top bar external navigation links (GitHub and Backend API), user profile pill, task form, priority selector, show/hide done tasks toggle, and task list container.
   - `public/style.css`: Modern, clean CSS using CSS custom properties (variables), Flexbox, top bar link styles, user pill styling, responsive layout.
-  - `public/app.js`: Client-side logic managing `currentUserId`, attaching both `X-User-Id` header and `?userId=<userId>` query parameter on all requests with `cache: 'no-store'`, handling user switching, task creation, priority changing, completion toggling, filtering, rendering cards, and handling deletions. Dynamically targets staging backend `https://task-manager-staging-608477010863.us-central1.run.app` when deployed on Vercel preview or staging domains, and targets production backend `https://task-manager-608477010863.us-central1.run.app` when deployed on production. Configures the top-bar Backend API link accordingly.
+  - `public/app.js`: Client-side logic managing `currentUserId`, attaching both `X-User-Id` header and `?userId=<userId>` query parameter on all requests with `cache: 'no-store'`, handling user switching, task creation, priority changing, completion toggling, filtering, rendering cards, and handling deletions. Dynamically targets staging backend `https://task-manager-staging-289332143182.us-central1.run.app` when deployed on Vercel preview or staging domains, and targets production backend `https://task-manager-289332143182.us-central1.run.app` when deployed on production. Configures the top-bar Backend API link accordingly.
   - `vercel.json`: Vercel project configuration linking `public/` directory and proxying `/api/*` to the appropriate Cloud Run service.
 - **State Handling**:
   - `currentUserId`: string stored in `localStorage` (defaults to `'noam'`).
@@ -178,11 +178,11 @@ All endpoints accept user identification via `X-User-Id` header or `?userId=<use
 - **Port**: `PORT` environment variable (defaults to `8080`).
 - **Node Environment**: `NODE_ENV` (defaults to `production` in container, `development` locally).
 - **Data File**: `DATA_FILE_PATH` (defaults to `./data/tasks.json` for local fallback).
-- **GCP Project**: `task-manager-510913` (defaults in code and set via `GOOGLE_CLOUD_PROJECT`).
+- **GCP Project**: `ai-learning-499409` (defaults in code and set via `GOOGLE_CLOUD_PROJECT`).
 - **GitHub Repository**: `https://github.com/noam2030/task-manager`.
 - **Production Frontend URL**: `https://task-manager-ui-gamma-blond.vercel.app`.
-- **Production Backend URL**: `https://task-manager-608477010863.us-central1.run.app`.
-- **Staging Backend URL**: `https://task-manager-staging-608477010863.us-central1.run.app`.
+- **Production Backend URL**: `https://task-manager-289332143182.us-central1.run.app`.
+- **Staging Backend URL**: `https://task-manager-staging-289332143182.us-central1.run.app`.
 - **Vercel Project Name**: `task-manager-ui`.
 - **GCP Region**: `us-central1`.
 
@@ -206,7 +206,7 @@ All endpoints accept user identification via `X-User-Id` header or `?userId=<use
   - Production URL: `https://task-manager-ui-gamma-blond.vercel.app`
   - Config: `vercel.json` with API proxy rewrites to Cloud Run backend.
 - **Backend Deployment (Google Cloud Run)**:
-  - Project ID: `task-manager-510913`
+  - Project ID: `ai-learning-499409`
   - Cloud Firestore: Default database in `us-central1`.
   - Production Service: `task-manager` on Cloud Run.
   - Staging Service: `task-manager-staging` on Cloud Run.

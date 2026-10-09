@@ -45,10 +45,10 @@ jobs:
         run: |
           gcloud run deploy task-manager \
             --source . \
-            --project task-manager-510913 \
+            --project ai-learning-499409 \
             --region us-central1 \
             --allow-unauthenticated \
-            --set-env-vars="USE_FIRESTORE=true,GOOGLE_CLOUD_PROJECT=task-manager-510913" \
+            --set-env-vars="USE_FIRESTORE=true,GOOGLE_CLOUD_PROJECT=ai-learning-499409" \
             --quiet
         env:
           HAS_GCP_CREDENTIALS: ${{ secrets.GCP_SA_KEY != '' }}

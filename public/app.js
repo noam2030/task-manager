@@ -48,8 +48,8 @@ function updateUserBadge() {
   }
 }
 
-const PROD_API_BASE = 'https://task-manager-608477010863.us-central1.run.app';
-const STAGING_API_BASE = 'https://task-manager-staging-608477010863.us-central1.run.app';
+const PROD_API_BASE = 'https://task-manager-289332143182.us-central1.run.app';
+const STAGING_API_BASE = 'https://task-manager-staging-289332143182.us-central1.run.app';
 
 function isStagingEnvironment() {
   const hostname = window.location.hostname;
