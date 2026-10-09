@@ -9,7 +9,7 @@ A minimal, high-efficiency task management web application built with a decouple
 The application is deployed and available in production:
 
 - **Production Web Application**: [https://task-manager-ui-gamma-blond.vercel.app](https://task-manager-ui-gamma-blond.vercel.app)
-- **Production Backend API**: [https://task-manager-608477010863.us-central1.run.app](https://task-manager-608477010863.us-central1.run.app)
+- **Production Backend API**: [https://task-manager-289332143182.us-central1.run.app](https://task-manager-289332143182.us-central1.run.app)
 - **API Health Check**: [https://task-manager-ui-gamma-blond.vercel.app/api/health](https://task-manager-ui-gamma-blond.vercel.app/api/health)
 
 ---
@@ -42,7 +42,7 @@ flowchart LR
 
 - **Frontend**: Vanilla HTML5, modern CSS3, and ES6 JavaScript hosted on Vercel.
 - **API Proxy**: `vercel.json` rewrites `/api/*` requests directly to the Cloud Run backend, eliminating CORS issues in production.
-- **Backend**: Express.js server on Google Cloud Run (`task-manager-510913`).
+- **Backend**: Express.js server on Google Cloud Run (`ai-learning-499409`).
 - **Database**: Google Cloud Firestore with local JSON storage fallback for offline development and testing.
 
 ---

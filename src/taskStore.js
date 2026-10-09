@@ -25,7 +25,7 @@ export class TaskStore {
     this.tasks = [];
 
     if (this.useFirestore) {
-      const projectId = process.env.GOOGLE_CLOUD_PROJECT || 'task-manager-510913';
+      const projectId = process.env.GOOGLE_CLOUD_PROJECT || 'ai-learning-499409';
       console.log(`[TaskStore] Using Firestore (project: ${projectId})`);
       this.db = new Firestore({ projectId });
     } else {
