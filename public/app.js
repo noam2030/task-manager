@@ -124,11 +124,21 @@ function getRequestOptions(options = {}) {
   };
 }
 
+function formatApiError(err, actionName = 'operation', targetUrl = '') {
+  const isNetworkFailure = err.name === 'TypeError' ||
+    (err.message && err.message.includes('Failed to fetch')) ||
+    (err.message && err.message.includes('NetworkError'));
+  if (isNetworkFailure) {
+    return `Could not connect to backend server (${actionName}).\nTarget URL: ${targetUrl || 'API endpoint'}\nPlease check your network connection or ensure the service is running.`;
+  }
+  return err.message || `Failed to perform ${actionName}`;
+}
+
 async function fetchTasks() {
+  const url = getApiUrl('/api/tasks');
   try {
-    const url = getApiUrl('/api/tasks');
     const res = await fetch(url, getRequestOptions());
-    if (!res.ok) throw new Error('Failed to fetch tasks');
+    if (!res.ok) throw new Error(`Failed to fetch tasks (HTTP ${res.status})`);
     allTasks = await res.json();
     renderTasks(allTasks);
     if (activeModalTaskId) {
@@ -138,7 +148,7 @@ async function fetchTasks() {
       }
     }
   } catch (err) {
-    console.error('Error fetching tasks:', err);
+    console.error(`Error fetching tasks from ${url}:`, err);
   }
 }
 
@@ -313,8 +323,8 @@ function escapeHtml(str) {
 }
 
 async function createTask(title, priority, details = '') {
+  const url = getApiUrl('/api/tasks');
   try {
-    const url = getApiUrl('/api/tasks');
     const res = await fetch(url, getRequestOptions({
       method: 'POST',
       headers: {
@@ -323,18 +333,19 @@ async function createTask(title, priority, details = '') {
       body: JSON.stringify({ title, priority, details }),
     }));
     if (!res.ok) {
-      const err = await res.json();
-      throw new Error(err.error || 'Failed to create task');
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || `Failed to create task (HTTP ${res.status})`);
     }
     await fetchTasks();
   } catch (err) {
-    alert(err.message);
+    console.error(`Error creating task at ${url}:`, err);
+    alert(formatApiError(err, 'create task', url));
   }
 }
 
 async function updateTaskDetails(id, details) {
+  const url = getApiUrl(`/api/tasks/${id}`);
   try {
-    const url = getApiUrl(`/api/tasks/${id}`);
     const res = await fetch(url, getRequestOptions({
       method: 'PATCH',
       headers: {
@@ -344,7 +355,7 @@ async function updateTaskDetails(id, details) {
     }));
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
-      throw new Error(err.error || 'Failed to update task details');
+      throw new Error(err.error || `Failed to update task details (HTTP ${res.status})`);
     }
     const updated = await res.json();
     await fetchTasks();
@@ -353,15 +364,15 @@ async function updateTaskDetails(id, details) {
       renderModalContent(activeTask);
     }
   } catch (err) {
-    console.error('Error updating task details:', err);
-    alert(err.message);
+    console.error(`Error updating task details at ${url}:`, err);
+    alert(formatApiError(err, 'update task details', url));
     await fetchTasks();
   }
 }
 
 async function updateTaskPriority(id, priority) {
+  const url = getApiUrl(`/api/tasks/${id}`);
   try {
-    const url = getApiUrl(`/api/tasks/${id}`);
     const res = await fetch(url, getRequestOptions({
       method: 'PATCH',
       headers: {
@@ -369,17 +380,21 @@ async function updateTaskPriority(id, priority) {
       },
       body: JSON.stringify({ priority }),
     }));
-    if (!res.ok) throw new Error('Failed to update task priority');
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || `Failed to update task priority (HTTP ${res.status})`);
+    }
     await fetchTasks();
   } catch (err) {
-    console.error('Error updating task priority:', err);
+    console.error(`Error updating task priority at ${url}:`, err);
+    alert(formatApiError(err, 'update task priority', url));
     await fetchTasks();
   }
 }
 
 async function toggleTask(id, completed) {
+  const url = getApiUrl(`/api/tasks/${id}`);
   try {
-    const url = getApiUrl(`/api/tasks/${id}`);
     const res = await fetch(url, getRequestOptions({
       method: 'PATCH',
       headers: {
@@ -387,27 +402,35 @@ async function toggleTask(id, completed) {
       },
       body: JSON.stringify({ completed }),
     }));
-    if (!res.ok) throw new Error('Failed to update task');
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || `Failed to update task status (HTTP ${res.status})`);
+    }
     await fetchTasks();
   } catch (err) {
-    console.error(err);
+    console.error(`Error updating task status at ${url}:`, err);
+    alert(formatApiError(err, 'update task status', url));
     await fetchTasks();
   }
 }
 
 async function deleteTask(id) {
+  const url = getApiUrl(`/api/tasks/${id}`);
   try {
-    const url = getApiUrl(`/api/tasks/${id}`);
     const res = await fetch(url, getRequestOptions({
       method: 'DELETE',
     }));
-    if (!res.ok) throw new Error('Failed to delete task');
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || `Failed to delete task (HTTP ${res.status})`);
+    }
     if (activeModalTaskId === id) {
       closeDetailsModal();
     }
     await fetchTasks();
   } catch (err) {
-    console.error(err);
+    console.error(`Error deleting task at ${url}:`, err);
+    alert(formatApiError(err, 'delete task', url));
     await fetchTasks();
   }
 }
