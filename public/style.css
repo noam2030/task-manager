@@ -168,6 +168,8 @@ body {
 
 .stats-bar {
   display: flex;
+  align-items: center;
+  flex-wrap: wrap;
   gap: 0.5rem;
   margin-top: 1rem;
 }
@@ -178,6 +180,36 @@ body {
   background: var(--surface-subtle);
   padding: 0.25rem 0.65rem;
   border-radius: 999px;
+}
+
+.progress-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--primary-color);
+  background: var(--card-bg);
+  border: 1px solid var(--primary-color);
+  padding: 0.2rem 0.65rem;
+  border-radius: 999px;
+}
+
+.progress-indicator[hidden] {
+  display: none;
+}
+
+.spinner {
+  width: 0.75rem;
+  height: 0.75rem;
+  border: 2px solid var(--border-color);
+  border-top-color: var(--primary-color);
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
 }
 
 .task-form-card {
@@ -423,6 +455,35 @@ body {
   align-items: center;
   gap: 0.65rem;
   flex-shrink: 0;
+}
+
+.task-item.is-busy {
+  opacity: 0.65;
+  pointer-events: none;
+}
+
+.btn-done {
+  background-color: var(--surface-subtle);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.25rem 0.65rem;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.btn-done:hover {
+  border-color: #10b981;
+  color: #10b981;
+}
+
+.btn-done.is-done {
+  background-color: var(--priority-low-bg);
+  color: var(--priority-low-text);
+  border-color: var(--priority-low-border);
 }
 
 .btn-view-details {

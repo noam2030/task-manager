@@ -25,7 +25,8 @@ Task Manager is a minimal, high-efficiency web application designed to manage pe
   2. `Medium`
   3. `Low` (lowest priority)
   Ties are ordered by creation timestamp in descending order (most recently created first). When a task's priority is modified, the list automatically updates to reflect the new sorting order.
-- **Task Completion (Mark as Done)**: Users can mark tasks as completed (done) or incomplete (pending).
+- **Task Completion (Mark as Done)**: Users can mark tasks as completed (done) or incomplete (pending) using a dedicated `Done` / `Undo` action button on each task row (styled consistently alongside the priority control).
+- **Progress Indication**: All database operations (fetching tasks, creating a task, toggling done/undo, changing priority, updating details, and deleting a task) display a clear in-progress indicator (`#progressIndicator` spinner badge in the header plus active button/row loading state) while the request is in flight.
 - **Hide / Show Done Tasks Toggle**:
   - The application provides a user-facing control to toggle between hiding and showing completed tasks.
   - The default state is **hide done tasks** (`showCompleted = false`).
@@ -50,14 +51,14 @@ Task Manager is a minimal, high-efficiency web application designed to manage pe
   - Default view hides completed tasks so users can focus on pending work.
 - **Task List View**:
   - Displays user's visible tasks sorted by priority (`High` -> `Medium` -> `Low`).
-  - Compact and clean task items: details text is not displayed in the main list. Each item includes the checkbox, task title, a `"Details"` button, the priority select dropdown, and the delete button.
+  - Compact and clean task items: details text is not displayed in the main list. Each item includes the task title on the left, and a `"Details"` button, a `"✓ Done"` / `"↩ Undo"` button, the priority select dropdown, and the delete button (`✕`) on the right.
   - Interactive priority selector badge on each task item allowing instantaneous switching between `High`, `Medium`, and `Low` with corresponding badge styling:
     - `High`: Red / Coral badge
     - `Medium`: Amber / Orange badge
     - `Low`: Green / Teal badge
-  - Interactive checkbox / done button to mark task as completed (done). When marked as done, if completed tasks are hidden, the task is smoothly removed from the active view.
+  - Interactive `"✓ Done"` / `"↩ Undo"` action button (`.btn-done`) to mark a task as completed (done) or incomplete (pending). When marked as done, if completed tasks are hidden, the task is smoothly removed from the active view.
   - Completed tasks when visible display with strikethrough title and subdued text color.
-  - Delete button (`✕`) with immediate optimistic/real-time update.
+  - Delete button (`✕`) with progress indication while deleting.
   - Empty state displaying a friendly message when no pending tasks remain or no tasks exist for the active user.
 - **Full-Screen Task Details Modal / View**:
   - Clicking the `"Details"` button on any task opens a full-screen view displaying task title, priority badge, completion status, and the complete formatted details text (`white-space: pre-wrap`).
