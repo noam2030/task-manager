@@ -76,3 +76,5 @@
 76. i want more space between the top bar and task manager. also, make the api button the same color as github.
 77. confirm
 78. mmerge
+79. i want that the root name of the firestore will be task-manager
+80. confirm

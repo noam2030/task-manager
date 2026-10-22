@@ -35,7 +35,7 @@ export class TaskStore {
 
   _getUserCollection(userId) {
     const cleanUserId = (userId || 'default-user').toString().trim() || 'default-user';
-    return this.db.collection('users').doc(cleanUserId).collection('tasks');
+    return this.db.collection('task-manager').doc(cleanUserId).collection('tasks');
   }
 
   load() {
