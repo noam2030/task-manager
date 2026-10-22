@@ -44,7 +44,7 @@ Task Manager is a minimal, high-efficiency web application designed to manage pe
 - **Project Documentation**: Top-level `README.md` providing project overview, feature summary, quick start guide, and direct links to the production website.
 
 ## 3. User Experience
-- **Header & Top Bar**: Fixed, non-wrapping header bar displaying the application title, subtitle, top-bar links to GitHub and the environment-specific Backend API, a Dark/Light theme toggle button (`#themeToggleBtn`), a single fixed-width Google auth / user button (`#googleAuthBtn` displaying **"Sign in with Google"** when on `guest` or the signed-in user's name/email when logged in, prompting for confirmation before signing out), and a task count summary (total, pending, completed).
+- **Header & Top Bar**: Fixed, non-wrapping header bar with generous spacing between the top navigation bar and the **Task Manager** title/subtitle, displaying top-bar links to GitHub and the environment-specific Backend API (styled identically with matching `.header-link` colors), a Dark/Light theme toggle button (`#themeToggleBtn`), a single fixed-width Google auth / user button (`#googleAuthBtn` displaying **"Sign in with Google"** when on `guest` or the signed-in user's name/email when logged in, prompting for confirmation before signing out), and a task count summary (total, pending, completed).
 - **Input Form**: Single-line form with an input for task title, an optional details/notes field for extended context, a priority select dropdown (`High`, `Medium`, `Low`), and an "Add Task" button.
 - **Filter Controls**:
   - A toggle button in the list header labeled `"Show done (N)"` / `"Hide done"` to switch visibility of completed tasks.
