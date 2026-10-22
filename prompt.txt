@@ -57,3 +57,6 @@
 57. i want that changing the task to done will be with button, same as chaning the priority. also i want to have a progress indication while the update db happens. (for all operation, also to remove task etc)
 58. confirm
 59. merge
+60. add 'are you sure' before deleting
+61. confirm
+62. merge

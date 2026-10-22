@@ -311,6 +311,7 @@ function renderTasks(tasks) {
     // Delete listener
     const deleteBtn = li.querySelector('.delete-btn');
     deleteBtn.addEventListener('click', async () => {
+      if (!window.confirm('Are you sure you want to delete this task?')) return;
       li.classList.add('is-busy');
       deleteBtn.textContent = '…';
       await deleteTask(task.id);

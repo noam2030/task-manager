@@ -33,7 +33,7 @@ Task Manager is a minimal, high-efficiency web application designed to manage pe
   - When hidden (default), completed tasks are excluded from the main task list view.
   - When shown, completed tasks are displayed in the list with completed styling (strikethrough text and checked state).
   - The toggle indicates how many completed tasks exist (e.g. "Show done (3)").
-- **Task Deletion**: Users can remove existing tasks belonging to their account.
+- **Task Deletion**: Users can remove existing tasks belonging to their account after confirming via an `"Are you sure?"` prompt.
 - **Decoupled Frontend Deployment**: The UI part of the application is deployed to Vercel as project `task-manager-ui`.
 - **Backend Cloud Deployment & Persistence**: The backend API is deployed to Google Cloud Run (`ai-learning-499409`) and persists task data per-user in Google Cloud Firestore (Native mode).
 - **Vercel-to-GCP Integration**: Vercel transparently proxies `/api/*` traffic to the Google Cloud Run service, avoiding cross-origin complexities.
@@ -58,7 +58,7 @@ Task Manager is a minimal, high-efficiency web application designed to manage pe
     - `Low`: Green / Teal badge
   - Interactive `"✓ Done"` / `"↩ Undo"` action button (`.btn-done`) to mark a task as completed (done) or incomplete (pending). When marked as done, if completed tasks are hidden, the task is smoothly removed from the active view.
   - Completed tasks when visible display with strikethrough title and subdued text color.
-  - Delete button (`✕`) with progress indication while deleting.
+  - Delete button (`✕`) that prompts `"Are you sure you want to delete this task?"` before deleting, with progress indication while deleting.
   - Empty state displaying a friendly message when no pending tasks remain or no tasks exist for the active user.
 - **Full-Screen Task Details Modal / View**:
   - Clicking the `"Details"` button on any task opens a full-screen view displaying task title, priority badge, completion status, and the complete formatted details text (`white-space: pre-wrap`).
