@@ -52,3 +52,11 @@ jobs:
             --quiet
         env:
           HAS_GCP_CREDENTIALS: ${{ secrets.GCP_SA_KEY != '' }}
+
+      - name: Deploy Frontend to Vercel (task-manager-ui)
+        if: env.HAS_VERCEL_TOKEN == 'true'
+        run: npx --yes vercel --prod --yes --token=${{ secrets.VERCEL_TOKEN }}
+        env:
+          HAS_VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN != '' }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID || 'team_abCCfq6oAKpFKOLdLU0hsGg5' }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID || 'prj_I9gsL2nntc9KRNzduqiAiGJ2jjaS' }}
