@@ -525,6 +525,7 @@ if (googleAuthBtn) {
       if (!firebaseAuth || !firebaseMod) return;
 
       if (firebaseAuth.currentUser) {
+        if (!window.confirm('Are you sure you want to sign out?')) return;
         startProgress('Signing out...');
         await firebaseMod.signOut(firebaseAuth);
         stopProgress();
