@@ -154,6 +154,11 @@ body {
   border-color: #93c5fd;
 }
 
+.btn-google-auth {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
 .header-content h1 {
   font-size: 1.875rem;
   font-weight: 700;

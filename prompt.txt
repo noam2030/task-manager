@@ -60,3 +60,6 @@
 60. add 'are you sure' before deleting
 61. confirm
 62. merge
+63. i want to add sing in with google option. after sign in - i will use this user and save the data per this user.
+64. confirm
+65. merge

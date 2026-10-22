@@ -509,6 +509,87 @@ if (switchUserBtn) {
   switchUserBtn.addEventListener('click', switchUser);
 }
 
+// Google Sign-In (Firebase Auth)
+const googleAuthBtn = document.getElementById('googleAuthBtn');
+const FIREBASE_CONFIG = {
+  apiKey: 'AIzaSyB1b70BteUvUs3kYPrMD1aP-SxpqFbEz7M',
+  authDomain: 'ai-learning-499409.firebaseapp.com',
+  projectId: 'ai-learning-499409',
+  appId: '1:289332143182:web:6931887c04f865c96c0f1f',
+};
+
+let firebaseAuth = null;
+let googleProvider = null;
+let firebaseMod = null;
+
+async function initGoogleAuth() {
+  if (!googleAuthBtn) return;
+  try {
+    const [{ initializeApp }, authMod] = await Promise.all([
+      import('https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js'),
+      import('https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js'),
+    ]);
+    firebaseMod = authMod;
+    const app = initializeApp(FIREBASE_CONFIG);
+    firebaseAuth = authMod.getAuth(app);
+    googleProvider = new authMod.GoogleAuthProvider();
+
+    authMod.onAuthStateChanged(firebaseAuth, (user) => {
+      if (user) {
+        const googleUserId = user.email || user.displayName || user.uid;
+        googleAuthBtn.textContent = 'Sign out';
+        googleAuthBtn.title = `Signed in as ${googleUserId} (click to sign out)`;
+        if (currentUserId !== googleUserId) {
+          currentUserId = googleUserId;
+          localStorage.setItem(USER_STORAGE_KEY, currentUserId);
+          updateUserBadge();
+          updateApiLink();
+          fetchTasks(true);
+        }
+      } else {
+        googleAuthBtn.textContent = 'Sign in with Google';
+        googleAuthBtn.title = 'Sign in with Google';
+      }
+    });
+  } catch (err) {
+    console.error('Failed to initialize Google Auth:', err);
+  }
+}
+
+if (googleAuthBtn) {
+  googleAuthBtn.addEventListener('click', async () => {
+    try {
+      if (!firebaseAuth) await initGoogleAuth();
+      if (!firebaseAuth || !firebaseMod) return;
+
+      if (firebaseAuth.currentUser) {
+        startProgress('Signing out...');
+        await firebaseMod.signOut(firebaseAuth);
+        stopProgress();
+      } else {
+        startProgress('Signing in...');
+        const result = await firebaseMod.signInWithPopup(firebaseAuth, googleProvider);
+        if (result && result.user) {
+          currentUserId = result.user.email || result.user.displayName || result.user.uid;
+          localStorage.setItem(USER_STORAGE_KEY, currentUserId);
+          updateUserBadge();
+          updateApiLink();
+          await fetchTasks(true);
+        }
+        stopProgress();
+      }
+    } catch (err) {
+      stopProgress();
+      if (err.code !== 'auth/popup-closed-by-user') {
+        console.error('Google Sign-In error:', err);
+        alert(err.message || 'Google Sign-In failed');
+      }
+    }
+  });
+}
+
+initGoogleAuth();
+
 if (toggleCompletedBtn) {
   toggleCompletedBtn.addEventListener('click', () => {
     showCompleted = !showCompleted;
