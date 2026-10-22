@@ -59,3 +59,4 @@
 59. merge
 60. add 'are you sure' before deleting
 61. confirm
+62. merge
