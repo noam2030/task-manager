@@ -50,3 +50,6 @@
 50. answer short. write minimum code. add gitgub workflow to deploy the frontent to vercel (task-manager-ui) - on merge
 51. confirm
 52. merge
+53. write the user in the same way website use. later i want to add a login and save the data per user
+54. number 1, only the username no avatar
+55. confirm
