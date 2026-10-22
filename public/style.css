@@ -189,7 +189,9 @@ body {
   background: var(--surface-subtle);
   border-color: var(--border-color);
   font-weight: 600;
-  width: 148px;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  width: 158px;
   justify-content: center;
   overflow: hidden;
   text-overflow: ellipsis;
