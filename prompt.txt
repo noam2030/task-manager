@@ -47,3 +47,5 @@
 47. write minimum code. answer shortly. i want to set an option to change theme to dark/ligh. the default is dark
 48. confirm
 49. merge
+50. answer short. write minimum code. add gitgub workflow to deploy the frontent to vercel (task-manager-ui) - on merge
+51. confirm
