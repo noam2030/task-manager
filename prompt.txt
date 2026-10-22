@@ -88,3 +88,6 @@
 88. if i am sign out, write welcome guest (with line below o make it clickable). when i signed in wrtie welcom name
 89. confirm
 90. merge
+91. the underline should only be under the name not under the welcome. also, after  i am singing in, the helper when hovvering over item shows sign in with google - but i am not on the sing in item.
+92. confirm
+93. צקרעק
