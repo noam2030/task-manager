@@ -41,7 +41,7 @@
               <span id="apiLinkLabel">Backend API</span>
             </a>
             <button type="button" class="header-link" id="themeToggleBtn" title="Toggle Dark/Light Theme">☀️ Light</button>
-            <button type="button" class="header-link" id="switchUserBtn" title="Switch user"><span id="currentUserName">noam</span></button>
+            <span class="header-link" id="currentUserName" hidden></span>
             <button type="button" class="header-link btn-google-auth" id="googleAuthBtn" title="Sign in with Google">Sign in with Google</button>
           </div>
         </div>
@@ -58,7 +58,7 @@
     </header>
 
     <main>
-      <section class="task-form-card">
+      <section class="task-form-card" id="taskFormCard" hidden>
         <form id="taskForm" class="task-form" autocomplete="off">
           <div class="form-row form-row-main">
             <div class="input-group">

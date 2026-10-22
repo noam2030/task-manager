@@ -5,7 +5,7 @@ Task Manager is a minimal, high-efficiency web application designed to manage pe
 
 ## 2. Requirements
 - **Per-User Isolation**: All task creation, storage, retrieval, modification, and deletion are strictly scoped to the active user (`userId`). User A cannot access or modify User B's tasks.
-- **User Identity & Google Sign-In**: Users can sign in with their Google account via a **"Sign in with Google"** button in the top bar (using Firebase Authentication `signInWithPopup` + `GoogleAuthProvider`), or switch manually. Upon signing in with Google, the active user (`currentUserId`) is set to the authenticated Google user's email (`user.email`), persisted in `localStorage`, and all tasks created, viewed, updated, or deleted are saved per that Google user in Firestore. Signed-in users can also sign out via the top bar.
+- **User Authentication (Signed Out vs Logged In)**: Users are strictly either **Signed Out** or **Logged In** with their Google account via the **"Sign in with Google"** button in the top bar (Firebase Authentication `signInWithPopup` + `GoogleAuthProvider`). Manual user switching without authentication is not allowed. When signed out, task creation and viewing are hidden and the UI prompts the user to sign in. Upon signing in with Google, `currentUserId` is set to the authenticated Google user's email (`user.email`), the username is displayed in the top bar alongside a **"Sign out"** button, and all tasks are loaded and saved per that user in Firestore.
 - **Task Creation**: Users can create tasks with a title, an optional details/notes field, and an assigned priority (`High`, `Medium`, or `Low`) within their account.
 - **Task Details (Creation, Full-Screen Viewing & Editing)**: Users can attach detailed context/notes during task creation. To keep the task list clean and compact, details are hidden from the main list items; instead, each task has a dedicated "Details" button. Clicking this button opens a full-screen view displaying the details, equipped with an "Edit Details" button allowing multi-line editing with Save/Cancel controls.
 - **Top Bar Links (GitHub & Backend API)**:
@@ -43,8 +43,8 @@ Task Manager is a minimal, high-efficiency web application designed to manage pe
 - **Project Documentation**: Top-level `README.md` providing project overview, feature summary, quick start guide, and direct links to the production website.
 
 ## 3. User Experience
-- **Header & Top Bar**: Clean header displaying the application title, subtitle, top-bar links to GitHub and the environment-specific Backend API, a Dark/Light theme toggle button (`#themeToggleBtn`), a clickable username pill (`#switchUserBtn` displaying `#currentUserName`, with no avatar icon), a **"Sign in with Google"** / **"Sign out"** button (`#googleAuthBtn`), and a task count summary (total, pending, completed).
-- **User Selection / Switch Modal**: Intuitive prompt to enter or change the active username.
+- **Header & Top Bar**: Clean header displaying the application title, subtitle, top-bar links to GitHub and the environment-specific Backend API, a Dark/Light theme toggle button (`#themeToggleBtn`), the signed-in username pill (`#currentUserName`, hidden when signed out), a **"Sign in with Google"** / **"Sign out"** button (`#googleAuthBtn`), and a task count summary (total, pending, completed).
+- **Signed-Out vs Logged-In States**: When signed out, the task creation form is hidden and the main view prompts the user to sign in with Google. When logged in, the task form and the user's tasks are displayed.
 - **Input Form**: Single-line form with an input for task title, an optional details/notes field for extended context, a priority select dropdown (`High`, `Medium`, `Low`), and an "Add Task" button.
 - **Filter Controls**:
   - A toggle button in the list header labeled `"Show done (N)"` / `"Hide done"` to switch visibility of completed tasks.
@@ -111,15 +111,15 @@ flowchart LR
 
 ## 7. Frontend
 - **File Structure**:
-  - `public/index.html`: Accessible semantic markup with top bar external navigation links (GitHub and Backend API), theme toggle button (`#themeToggleBtn`), clickable username button (`#switchUserBtn` / `#currentUserName`), Google Sign-In / Sign-Out button (`#googleAuthBtn`), task form, priority selector, show/hide done tasks toggle, and task list container.
+  - `public/index.html`: Accessible semantic markup with top bar external navigation links (GitHub and Backend API), theme toggle button (`#themeToggleBtn`), signed-in username pill (`#currentUserName`), Google Sign-In / Sign-Out button (`#googleAuthBtn`), task form, priority selector, show/hide done tasks toggle, and task list container.
   - `public/style.css`: Modern, clean CSS using CSS custom properties (variables) with Dark theme defaults on `:root` and Light theme overrides on `[data-theme="light"]`, Flexbox, top bar link/pill styles, responsive layout.
-  - `public/app.js`: Client-side logic managing `currentUserId`, Google Sign-In via Firebase Auth (`signInWithPopup` + `GoogleAuthProvider`), and theme (`taskManagerTheme`, defaulting to `'dark'`), attaching both `X-User-Id` header and `?userId=<userId>` query parameter on all requests with `cache: 'no-store'`, handling user switching, task creation, priority changing, completion toggling, filtering, rendering cards, and handling deletions. Dynamically targets staging backend `https://task-manager-staging-289332143182.us-central1.run.app` when deployed on Vercel preview or staging domains, and targets production backend `https://task-manager-289332143182.us-central1.run.app` when deployed on production. Configures the top-bar Backend API link accordingly. Provides descriptive error handling and diagnostic reporting if the backend cannot be reached.
+  - `public/app.js`: Client-side logic managing Google authentication state (`currentUserId` is `null` when signed out or set to the Google user's email when logged in) via Firebase Auth (`signInWithPopup` + `GoogleAuthProvider`), and theme (`taskManagerTheme`, defaulting to `'dark'`), attaching both `X-User-Id` header and `?userId=<userId>` query parameter on all requests with `cache: 'no-store'`, handling task creation, priority changing, completion toggling, filtering, rendering cards, and handling deletions. Dynamically targets staging backend `https://task-manager-staging-289332143182.us-central1.run.app` when deployed on Vercel preview or staging domains, and targets production backend `https://task-manager-289332143182.us-central1.run.app` when deployed on production. Configures the top-bar Backend API link accordingly. Provides descriptive error handling and diagnostic reporting if the backend cannot be reached.
   - `vercel.json`: Vercel project configuration linking `public/` directory and proxying `/api/*` to the appropriate Cloud Run service.
 - **State Handling**:
-  - `currentUserId`: string stored in `localStorage` (defaults to `'noam'`).
+  - `currentUserId`: `null` when signed out; set to the authenticated Google user's email (`user.email`) when logged in via Firebase Auth.
   - `taskManagerTheme`: string stored in `localStorage` (`'dark'` or `'light'`, defaults to `'dark'`), reflected on `document.documentElement.dataset.theme`.
   - `showCompleted`: boolean flag, defaults to `false` (hide done tasks).
-  - Toggling user re-fetches and renders tasks for the newly selected user.
+  - Signing in or out automatically updates the UI state and fetches or clears tasks.
 - **Network Error & Resilience**:
   - Client operations (`fetchTasks`, `createTask`, `updateTaskDetails`, `toggleTask`, `deleteTask`) include resilient error handling providing user-friendly diagnostic notifications detailing the target endpoint if connectivity fails rather than unhandled or generic browser `'Failed to fetch'` exceptions.
 

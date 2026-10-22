@@ -63,3 +63,5 @@
 63. i want to add sing in with google option. after sign in - i will use this user and save the data per this user.
 64. confirm
 65. merge
+66. i want the ui to behavie like a standtard website with login. right now i can swhich users without login. i want to be eigher signout or loged in
+67. confirm

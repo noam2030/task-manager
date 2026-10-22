@@ -41,9 +41,9 @@ const cancelModalDetailsBtn = document.getElementById('cancelModalDetailsBtn');
 const closeModalBtn = document.getElementById('closeModalBtn');
 let activeModalTaskId = null;
 
-const USER_STORAGE_KEY = 'taskManagerUser';
 const THEME_STORAGE_KEY = 'taskManagerTheme';
 const themeToggleBtn = document.getElementById('themeToggleBtn');
+const taskFormCard = document.getElementById('taskFormCard');
 
 function applyTheme(theme) {
   document.documentElement.dataset.theme = theme;
@@ -63,24 +63,23 @@ if (themeToggleBtn) {
   });
 }
 
-function getCurrentUserId() {
-  const saved = localStorage.getItem(USER_STORAGE_KEY);
-  if (saved && saved.trim()) {
-    return saved.trim();
-  }
-  const defaultUser = 'noam';
-  localStorage.setItem(USER_STORAGE_KEY, defaultUser);
-  return defaultUser;
-}
-
-let currentUserId = getCurrentUserId();
+let currentUserId = null;
 let allTasks = [];
 let showCompleted = false; // Default: hide done tasks
 
 function updateUserBadge() {
   const currentUserNameEl = document.getElementById('currentUserName');
   if (currentUserNameEl) {
-    currentUserNameEl.textContent = currentUserId;
+    if (currentUserId) {
+      currentUserNameEl.textContent = currentUserId;
+      currentUserNameEl.hidden = false;
+    } else {
+      currentUserNameEl.textContent = '';
+      currentUserNameEl.hidden = true;
+    }
+  }
+  if (taskFormCard) {
+    taskFormCard.hidden = !currentUserId;
   }
 }
 
@@ -135,17 +134,6 @@ function updateApiLink() {
     }
   }
   apiLink.title = `Backend API: ${baseUrl}/api/tasks`;
-}
-
-function switchUser() {
-  const input = window.prompt('Enter username or identifier:', currentUserId);
-  if (input !== null && input.trim() && input.trim() !== currentUserId) {
-    currentUserId = input.trim();
-    localStorage.setItem(USER_STORAGE_KEY, currentUserId);
-    updateUserBadge();
-    updateApiLink();
-    fetchTasks(true);
-  }
 }
 
 function getRequestOptions(options = {}) {
@@ -218,13 +206,21 @@ function renderTasks(tasks) {
   updateStats(tasks);
   taskList.innerHTML = '';
 
+  const titleEl = emptyState.querySelector('.empty-title');
+  const subEl = emptyState.querySelector('.empty-sub');
+
+  if (!currentUserId) {
+    emptyState.hidden = false;
+    if (titleEl) titleEl.textContent = 'Sign in to view your tasks';
+    if (subEl) subEl.textContent = 'Click "Sign in with Google" in the top bar to manage your tasks.';
+    return;
+  }
+
   const completed = tasks.filter((t) => t.completed).length;
   const visibleTasks = showCompleted ? tasks : tasks.filter((t) => !t.completed);
 
   if (visibleTasks.length === 0) {
     emptyState.hidden = false;
-    const titleEl = emptyState.querySelector('.empty-title');
-    const subEl = emptyState.querySelector('.empty-sub');
     if (tasks.length === 0) {
       if (titleEl) titleEl.textContent = 'All tasks done!';
       if (subEl) subEl.textContent = 'Add a new task above with its priority to get started.';
@@ -504,11 +500,6 @@ async function deleteTask(id) {
   }
 }
 
-const switchUserBtn = document.getElementById('switchUserBtn');
-if (switchUserBtn) {
-  switchUserBtn.addEventListener('click', switchUser);
-}
-
 // Google Sign-In (Firebase Auth)
 const googleAuthBtn = document.getElementById('googleAuthBtn');
 const FIREBASE_CONFIG = {
@@ -536,19 +527,19 @@ async function initGoogleAuth() {
 
     authMod.onAuthStateChanged(firebaseAuth, (user) => {
       if (user) {
-        const googleUserId = user.email || user.displayName || user.uid;
+        currentUserId = user.email || user.displayName || user.uid;
         googleAuthBtn.textContent = 'Sign out';
-        googleAuthBtn.title = `Signed in as ${googleUserId} (click to sign out)`;
-        if (currentUserId !== googleUserId) {
-          currentUserId = googleUserId;
-          localStorage.setItem(USER_STORAGE_KEY, currentUserId);
-          updateUserBadge();
-          updateApiLink();
-          fetchTasks(true);
-        }
+        googleAuthBtn.title = `Signed in as ${currentUserId} (click to sign out)`;
+        updateUserBadge();
+        updateApiLink();
+        fetchTasks(true);
       } else {
+        currentUserId = null;
         googleAuthBtn.textContent = 'Sign in with Google';
         googleAuthBtn.title = 'Sign in with Google';
+        updateUserBadge();
+        updateApiLink();
+        renderTasks([]);
       }
     });
   } catch (err) {
@@ -568,14 +559,7 @@ if (googleAuthBtn) {
         stopProgress();
       } else {
         startProgress('Signing in...');
-        const result = await firebaseMod.signInWithPopup(firebaseAuth, googleProvider);
-        if (result && result.user) {
-          currentUserId = result.user.email || result.user.displayName || result.user.uid;
-          localStorage.setItem(USER_STORAGE_KEY, currentUserId);
-          updateUserBadge();
-          updateApiLink();
-          await fetchTasks(true);
-        }
+        await firebaseMod.signInWithPopup(firebaseAuth, googleProvider);
         stopProgress();
       }
     } catch (err) {
@@ -668,4 +652,4 @@ taskForm.addEventListener('submit', async (e) => {
 // Initialize on page load
 updateUserBadge();
 updateApiLink();
-fetchTasks(true);
+renderTasks([]);
