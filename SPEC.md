@@ -66,7 +66,7 @@ Task Manager is a minimal, high-efficiency web application designed to manage pe
   - Edit mode features a spacious textarea and `"Save"` / `"Cancel"` buttons.
   - When saving, updates the task via `PATCH /api/tasks/:id` with instant visual feedback ("Saving...").
   - Features a prominent `"Close"` button (also supports pressing `Escape` or clicking the backdrop) to return seamlessly to the task list.
-- **Responsive Design**: Fast, modern, mobile-friendly interface designed with accessible semantic HTML and CSS variables.
+- **Responsive & Modern Design**: Sleek, glassmorphic, mobile-friendly interface using `Inter` typography, ambient radial background lighting, frosted translucent cards (`backdrop-filter: blur(16px)`), gradient primary controls, color-coded priority left accents on task rows, and smooth micro-interactions in both Dark and Light themes.
 
 ## 4. Architecture
 The application employs a decoupled modern web architecture with per-user data partitioning:
@@ -112,7 +112,7 @@ flowchart LR
 ## 7. Frontend
 - **File Structure**:
   - `public/index.html`: Accessible semantic markup with top bar external navigation links (GitHub and Backend API), theme toggle button (`#themeToggleBtn`), single Google Sign-In / user button (`#googleAuthBtn`), task form, priority selector, show/hide done tasks toggle, and task list container.
-  - `public/style.css`: Modern, clean CSS using CSS custom properties (variables) with Dark theme defaults on `:root` and Light theme overrides on `[data-theme="light"]`, Flexbox, top bar link/pill styles, responsive layout.
+  - `public/style.css`: Modern glassmorphic CSS using custom properties (variables) with Dark theme defaults on `:root` and Light theme overrides on `[data-theme="light"]`, `Inter` font family, ambient radial gradients, frosted card surfaces, priority accent indicators, Flexbox, top bar link/pill styles, and responsive layout.
   - `public/app.js`: Client-side logic managing `currentUserId` (defaulting to `'guest'` when signed out, or set to the Google user's name/email when logged in via Firebase Auth `signInWithPopup` + `GoogleAuthProvider`), and theme (`taskManagerTheme`, defaulting to `'dark'`), attaching both `X-User-Id` header and `?userId=<userId>` query parameter on all requests with `cache: 'no-store'`, handling task creation, priority changing, completion toggling, filtering, rendering cards, and handling deletions. Dynamically targets staging backend `https://task-manager-staging-289332143182.us-central1.run.app` when deployed on Vercel preview or staging domains, and targets production backend `https://task-manager-289332143182.us-central1.run.app` when deployed on production. Configures the top-bar Backend API link accordingly. Provides descriptive error handling and diagnostic reporting if the backend cannot be reached.
   - `vercel.json`: Vercel project configuration linking `public/` directory and proxying `/api/*` to the appropriate Cloud Run service.
 - **State Handling**:
