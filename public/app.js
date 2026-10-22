@@ -26,6 +26,26 @@ const closeModalBtn = document.getElementById('closeModalBtn');
 let activeModalTaskId = null;
 
 const USER_STORAGE_KEY = 'taskManagerUser';
+const THEME_STORAGE_KEY = 'taskManagerTheme';
+const themeToggleBtn = document.getElementById('themeToggleBtn');
+
+function applyTheme(theme) {
+  document.documentElement.dataset.theme = theme;
+  if (themeToggleBtn) {
+    themeToggleBtn.textContent = theme === 'dark' ? '☀️ Light' : '🌙 Dark';
+  }
+}
+
+let currentTheme = localStorage.getItem(THEME_STORAGE_KEY) || 'dark';
+applyTheme(currentTheme);
+
+if (themeToggleBtn) {
+  themeToggleBtn.addEventListener('click', () => {
+    currentTheme = currentTheme === 'dark' ? 'light' : 'dark';
+    localStorage.setItem(THEME_STORAGE_KEY, currentTheme);
+    applyTheme(currentTheme);
+  });
+}
 
 function getCurrentUserId() {
   const saved = localStorage.getItem(USER_STORAGE_KEY);
