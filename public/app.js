@@ -9,6 +9,22 @@ const pendingCount = document.getElementById('pendingCount');
 const completedCount = document.getElementById('completedCount');
 const toggleCompletedBtn = document.getElementById('toggleCompletedBtn');
 const hiddenDoneCount = document.getElementById('hiddenDoneCount');
+const progressIndicator = document.getElementById('progressIndicator');
+const progressText = document.getElementById('progressText');
+const submitBtn = document.getElementById('submitBtn');
+
+let pendingOps = 0;
+function startProgress(label = 'Updating...') {
+  pendingOps++;
+  if (progressText) progressText.textContent = label;
+  if (progressIndicator) progressIndicator.hidden = false;
+}
+function stopProgress() {
+  pendingOps = Math.max(0, pendingOps - 1);
+  if (pendingOps === 0 && progressIndicator) {
+    progressIndicator.hidden = true;
+  }
+}
 
 // Full-Screen Details Modal elements
 const detailsModal = document.getElementById('detailsModal');
@@ -128,7 +144,7 @@ function switchUser() {
     localStorage.setItem(USER_STORAGE_KEY, currentUserId);
     updateUserBadge();
     updateApiLink();
-    fetchTasks();
+    fetchTasks(true);
   }
 }
 
@@ -154,8 +170,9 @@ function formatApiError(err, actionName = 'operation', targetUrl = '') {
   return err.message || `Failed to perform ${actionName}`;
 }
 
-async function fetchTasks() {
+async function fetchTasks(showLoader = false) {
   const url = getApiUrl('/api/tasks');
+  if (showLoader) startProgress('Loading tasks...');
   try {
     const res = await fetch(url, getRequestOptions());
     if (!res.ok) throw new Error(`Failed to fetch tasks (HTTP ${res.status})`);
@@ -169,6 +186,8 @@ async function fetchTasks() {
     }
   } catch (err) {
     console.error(`Error fetching tasks from ${url}:`, err);
+  } finally {
+    if (showLoader) stopProgress();
   }
 }
 
@@ -229,13 +248,6 @@ function renderTasks(tasks) {
 
     li.innerHTML = `
       <div class="task-left">
-        <input
-          type="checkbox"
-          class="task-checkbox"
-          ${task.completed ? 'checked' : ''}
-          aria-label="Mark task '${escapeHtml(task.title)}' as ${task.completed ? 'incomplete' : 'done'}"
-          title="${task.completed ? 'Mark as incomplete' : 'Mark as done'}"
-        />
         <span class="task-title">${escapeHtml(task.title)}</span>
       </div>
       <div class="task-right">
@@ -246,6 +258,14 @@ function renderTasks(tasks) {
           title="${hasDetails ? 'View details (notes attached)' : 'View details'}"
         >
           📄 Details${hasDetails ? ' •' : ''}
+        </button>
+        <button
+          type="button"
+          class="btn-done ${task.completed ? 'is-done' : ''}"
+          aria-label="Mark task '${escapeHtml(task.title)}' as ${task.completed ? 'incomplete' : 'done'}"
+          title="${task.completed ? 'Mark as incomplete' : 'Mark as done'}"
+        >
+          ${task.completed ? '↩ Undo' : '✓ Done'}
         </button>
         <select
           class="priority-select ${priorityClass}"
@@ -276,18 +296,23 @@ function renderTasks(tasks) {
     // Priority change listener
     const prioritySelect = li.querySelector('.priority-select');
     prioritySelect.addEventListener('change', async () => {
+      li.classList.add('is-busy');
       await updateTaskPriority(task.id, prioritySelect.value);
     });
 
-    // Toggle complete listener
-    const checkbox = li.querySelector('.task-checkbox');
-    checkbox.addEventListener('change', async () => {
-      await toggleTask(task.id, checkbox.checked);
+    // Toggle complete button listener
+    const doneBtn = li.querySelector('.btn-done');
+    doneBtn.addEventListener('click', async () => {
+      li.classList.add('is-busy');
+      doneBtn.textContent = 'Saving...';
+      await toggleTask(task.id, !task.completed);
     });
 
     // Delete listener
     const deleteBtn = li.querySelector('.delete-btn');
     deleteBtn.addEventListener('click', async () => {
+      li.classList.add('is-busy');
+      deleteBtn.textContent = '…';
       await deleteTask(task.id);
     });
 
@@ -344,6 +369,11 @@ function escapeHtml(str) {
 
 async function createTask(title, priority, details = '') {
   const url = getApiUrl('/api/tasks');
+  startProgress('Adding task...');
+  if (submitBtn) {
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Adding...';
+  }
   try {
     const res = await fetch(url, getRequestOptions({
       method: 'POST',
@@ -360,11 +390,18 @@ async function createTask(title, priority, details = '') {
   } catch (err) {
     console.error(`Error creating task at ${url}:`, err);
     alert(formatApiError(err, 'create task', url));
+  } finally {
+    if (submitBtn) {
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Add Task';
+    }
+    stopProgress();
   }
 }
 
 async function updateTaskDetails(id, details) {
   const url = getApiUrl(`/api/tasks/${id}`);
+  startProgress('Saving details...');
   try {
     const res = await fetch(url, getRequestOptions({
       method: 'PATCH',
@@ -387,11 +424,14 @@ async function updateTaskDetails(id, details) {
     console.error(`Error updating task details at ${url}:`, err);
     alert(formatApiError(err, 'update task details', url));
     await fetchTasks();
+  } finally {
+    stopProgress();
   }
 }
 
 async function updateTaskPriority(id, priority) {
   const url = getApiUrl(`/api/tasks/${id}`);
+  startProgress('Updating priority...');
   try {
     const res = await fetch(url, getRequestOptions({
       method: 'PATCH',
@@ -409,11 +449,14 @@ async function updateTaskPriority(id, priority) {
     console.error(`Error updating task priority at ${url}:`, err);
     alert(formatApiError(err, 'update task priority', url));
     await fetchTasks();
+  } finally {
+    stopProgress();
   }
 }
 
 async function toggleTask(id, completed) {
   const url = getApiUrl(`/api/tasks/${id}`);
+  startProgress(completed ? 'Marking done...' : 'Reopening task...');
   try {
     const res = await fetch(url, getRequestOptions({
       method: 'PATCH',
@@ -431,11 +474,14 @@ async function toggleTask(id, completed) {
     console.error(`Error updating task status at ${url}:`, err);
     alert(formatApiError(err, 'update task status', url));
     await fetchTasks();
+  } finally {
+    stopProgress();
   }
 }
 
 async function deleteTask(id) {
   const url = getApiUrl(`/api/tasks/${id}`);
+  startProgress('Removing task...');
   try {
     const res = await fetch(url, getRequestOptions({
       method: 'DELETE',
@@ -452,6 +498,8 @@ async function deleteTask(id) {
     console.error(`Error deleting task at ${url}:`, err);
     alert(formatApiError(err, 'delete task', url));
     await fetchTasks();
+  } finally {
+    stopProgress();
   }
 }
 
@@ -538,4 +586,4 @@ taskForm.addEventListener('submit', async (e) => {
 // Initialize on page load
 updateUserBadge();
 updateApiLink();
-fetchTasks();
+fetchTasks(true);

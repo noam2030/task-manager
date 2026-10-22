@@ -54,3 +54,6 @@
 54. number 1, only the username no avatar
 55. confirm
 56. merge
+57. i want that changing the task to done will be with button, same as chaning the priority. also i want to have a progress indication while the update db happens. (for all operation, also to remove task etc)
+58. confirm
+59. merge
