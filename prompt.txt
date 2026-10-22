@@ -73,3 +73,5 @@
 73. i want that the header bar will be in the same place when i am singed in or signed out. also, i want to ask before signout
 74. confirm
 75. merge
+76. i want more space between the top bar and task manager. also, make the api button the same color as github.
+77. confirm
