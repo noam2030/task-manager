@@ -66,3 +66,7 @@
 66. i want the ui to behavie like a standtard website with login. right now i can swhich users without login. i want to be eigher signout or loged in
 67. confirm
 68. merge
+69. i dont the there will be only one button - wither sing in with google or the name of the user signed in. no second button
+70. no, i want that default user will be guest.
+71. confirm
+72. merge
