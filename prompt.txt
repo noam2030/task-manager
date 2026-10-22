@@ -49,3 +49,4 @@
 49. merge
 50. answer short. write minimum code. add gitgub workflow to deploy the frontent to vercel (task-manager-ui) - on merge
 51. confirm
+52. merge
