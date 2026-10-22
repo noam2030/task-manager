@@ -53,3 +53,4 @@
 53. write the user in the same way website use. later i want to add a login and save the data per user
 54. number 1, only the username no avatar
 55. confirm
+56. merge
