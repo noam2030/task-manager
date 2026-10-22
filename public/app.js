@@ -503,12 +503,12 @@ async function initGoogleAuth() {
     authMod.onAuthStateChanged(firebaseAuth, (user) => {
       if (user) {
         currentUserId = user.email || user.displayName || user.uid;
-        googleAuthBtn.textContent = `Welcome ${user.displayName || currentUserId}`;
-        googleAuthBtn.title = `Signed in as ${currentUserId} (click to sign out)`;
+        googleAuthBtn.textContent = user.displayName || currentUserId;
+        googleAuthBtn.title = 'Sign out';
       } else {
         currentUserId = 'guest';
-        googleAuthBtn.textContent = 'Welcome guest';
-        googleAuthBtn.title = 'Sign in with Google (currently guest)';
+        googleAuthBtn.textContent = 'guest';
+        googleAuthBtn.title = 'Sign in with Google';
       }
       updateApiLink();
       fetchTasks(true);
