@@ -78,3 +78,6 @@
 78. mmerge
 79. i want that the root name of the firestore will be task-manager
 80. confirm
+81. merge
+82. i want that staging deployment will be run only if i click on github
+83. confirm

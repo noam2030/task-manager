@@ -219,5 +219,5 @@ All endpoints accept user identification via `X-User-Id` header or `?userId=<use
   - Staging Service: `task-manager-staging` on Cloud Run.
 - **GitHub Actions Workflows**:
   - `.github/workflows/ci.yml`: Runs `npm test` on all pull requests and commits to `main`.
-  - `.github/workflows/deploy-staging.yml`: Deploys to `task-manager-staging` on PR.
+  - `.github/workflows/deploy-staging.yml`: Deploys to `task-manager-staging` when manually triggered via GitHub Actions (`workflow_dispatch`).
   - `.github/workflows/deploy-prod.yml`: Deploys backend to `task-manager` on Cloud Run and frontend to `task-manager-ui` on Vercel on merge to `main`.
