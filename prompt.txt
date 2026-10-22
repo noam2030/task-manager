@@ -85,3 +85,6 @@
 85. make the UI more impressive. more modern. up to date. do not add logic. do not add/change backend logic
 86. confirm
 87. merge
+88. if i am sign out, write welcome guest (with line below o make it clickable). when i signed in wrtie welcom name
+89. confirm
+90. merge
