@@ -65,3 +65,4 @@
 65. merge
 66. i want the ui to behavie like a standtard website with login. right now i can swhich users without login. i want to be eigher signout or loged in
 67. confirm
+68. merge
