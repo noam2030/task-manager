@@ -43,7 +43,6 @@ let activeModalTaskId = null;
 
 const THEME_STORAGE_KEY = 'taskManagerTheme';
 const themeToggleBtn = document.getElementById('themeToggleBtn');
-const taskFormCard = document.getElementById('taskFormCard');
 
 function applyTheme(theme) {
   document.documentElement.dataset.theme = theme;
@@ -63,25 +62,9 @@ if (themeToggleBtn) {
   });
 }
 
-let currentUserId = null;
+let currentUserId = 'guest';
 let allTasks = [];
 let showCompleted = false; // Default: hide done tasks
-
-function updateUserBadge() {
-  const currentUserNameEl = document.getElementById('currentUserName');
-  if (currentUserNameEl) {
-    if (currentUserId) {
-      currentUserNameEl.textContent = currentUserId;
-      currentUserNameEl.hidden = false;
-    } else {
-      currentUserNameEl.textContent = '';
-      currentUserNameEl.hidden = true;
-    }
-  }
-  if (taskFormCard) {
-    taskFormCard.hidden = !currentUserId;
-  }
-}
 
 const PROD_API_BASE = 'https://task-manager-289332143182.us-central1.run.app';
 const STAGING_API_BASE = 'https://task-manager-staging-289332143182.us-central1.run.app';
@@ -206,21 +189,13 @@ function renderTasks(tasks) {
   updateStats(tasks);
   taskList.innerHTML = '';
 
-  const titleEl = emptyState.querySelector('.empty-title');
-  const subEl = emptyState.querySelector('.empty-sub');
-
-  if (!currentUserId) {
-    emptyState.hidden = false;
-    if (titleEl) titleEl.textContent = 'Sign in to view your tasks';
-    if (subEl) subEl.textContent = 'Click "Sign in with Google" in the top bar to manage your tasks.';
-    return;
-  }
-
   const completed = tasks.filter((t) => t.completed).length;
   const visibleTasks = showCompleted ? tasks : tasks.filter((t) => !t.completed);
 
   if (visibleTasks.length === 0) {
     emptyState.hidden = false;
+    const titleEl = emptyState.querySelector('.empty-title');
+    const subEl = emptyState.querySelector('.empty-sub');
     if (tasks.length === 0) {
       if (titleEl) titleEl.textContent = 'All tasks done!';
       if (subEl) subEl.textContent = 'Add a new task above with its priority to get started.';
@@ -528,19 +503,15 @@ async function initGoogleAuth() {
     authMod.onAuthStateChanged(firebaseAuth, (user) => {
       if (user) {
         currentUserId = user.email || user.displayName || user.uid;
-        googleAuthBtn.textContent = 'Sign out';
+        googleAuthBtn.textContent = user.displayName || currentUserId;
         googleAuthBtn.title = `Signed in as ${currentUserId} (click to sign out)`;
-        updateUserBadge();
-        updateApiLink();
-        fetchTasks(true);
       } else {
-        currentUserId = null;
+        currentUserId = 'guest';
         googleAuthBtn.textContent = 'Sign in with Google';
-        googleAuthBtn.title = 'Sign in with Google';
-        updateUserBadge();
-        updateApiLink();
-        renderTasks([]);
+        googleAuthBtn.title = 'Sign in with Google (currently guest)';
       }
+      updateApiLink();
+      fetchTasks(true);
     });
   } catch (err) {
     console.error('Failed to initialize Google Auth:', err);
@@ -650,6 +621,5 @@ taskForm.addEventListener('submit', async (e) => {
 });
 
 // Initialize on page load
-updateUserBadge();
 updateApiLink();
-renderTasks([]);
+fetchTasks(true);
