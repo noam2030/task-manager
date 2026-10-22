@@ -73,14 +73,14 @@ The application employs a decoupled modern web architecture with per-user data p
 - **Frontend (Vercel)**: Static HTML5, modern CSS3, and vanilla JavaScript hosted globally on Vercel (`task-manager-ui`), attaching `X-User-Id` to all API requests.
 - **Reverse Proxy / Rewrites**: `vercel.json` rewrites `/api/*` requests to the Google Cloud Run backend.
 - **Backend (Google Cloud Run)**: Lightweight Node.js Express server providing RESTful JSON APIs with user extraction and CORS support.
-- **Persistent Storage**: Google Cloud Firestore (Native mode) with tasks stored under `users/{userId}/tasks` (or scoped by `userId`) in `ai-learning-499409`.
+- **Persistent Storage**: Google Cloud Firestore (Native mode) with tasks stored under `task-manager/{userId}/tasks` (or scoped by `userId`) in `ai-learning-499409`.
 - **Local/Test Environment**: In-memory / file-backed JSON store partitioned by `userId` for local development and offline automated testing.
 
 ```mermaid
 flowchart LR
     Browser["User Browser (Active User)"] -->|"X-User-Id & /api/*"| Vercel["Vercel (task-manager-ui)"]
     Vercel -->|"Proxy /api/*"| CloudRun["Google Cloud Run (task-manager)"]
-    CloudRun -->|"Read / Write per user"| Firestore["Firestore (users/{userId}/tasks)"]
+    CloudRun -->|"Read / Write per user"| Firestore["Firestore (task-manager/{userId}/tasks)"]
 ```
 
 ## 5. Technology Stack
@@ -97,7 +97,7 @@ flowchart LR
 ## 6. Backend
 - **File Structure**:
   - `server.js`: Server bootstrap, CORS handling, Express configuration, middleware, and route mounting.
-  - `src/taskStore.js`: Task repository abstraction with per-user data handling, Firestore integration (`users/{userId}/tasks`), local fallback, priority sorting logic, and CRUD operations.
+  - `src/taskStore.js`: Task repository abstraction with per-user data handling, Firestore integration (`task-manager/{userId}/tasks`), local fallback, priority sorting logic, and CRUD operations.
   - `src/routes.js`: Express router extracting `userId` from `X-User-Id` header (or `userId` query parameter fallback), validating user presence, and dispatching to store.
 - **User Scoping & Security**:
   - Middleware extracts `userId = req.headers['x-user-id']?.trim() || req.query.userId?.trim()`.
