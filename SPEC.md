@@ -42,7 +42,7 @@ Task Manager is a minimal, high-efficiency web application designed to manage pe
 - **Project Documentation**: Top-level `README.md` providing project overview, feature summary, quick start guide, and direct links to the production website.
 
 ## 3. User Experience
-- **Header & Top Bar**: Clean header displaying the application title, subtitle, top-bar links to GitHub and the environment-specific Backend API, a Dark/Light theme toggle button (`#themeToggleBtn`), the active user badge (e.g. `👤 noam`), a `"Switch User"` button, and a task count summary (total, pending, completed).
+- **Header & Top Bar**: Clean header displaying the application title, subtitle, top-bar links to GitHub and the environment-specific Backend API, a Dark/Light theme toggle button (`#themeToggleBtn`), a clickable username pill (`#switchUserBtn` displaying `#currentUserName`, with no avatar icon) to switch the active user, and a task count summary (total, pending, completed).
 - **User Selection / Switch Modal**: Intuitive prompt to enter or change the active username.
 - **Input Form**: Single-line form with an input for task title, an optional details/notes field for extended context, a priority select dropdown (`High`, `Medium`, `Low`), and an "Add Task" button.
 - **Filter Controls**:
@@ -110,8 +110,8 @@ flowchart LR
 
 ## 7. Frontend
 - **File Structure**:
-  - `public/index.html`: Accessible semantic markup with top bar external navigation links (GitHub and Backend API), theme toggle button (`#themeToggleBtn`), user profile pill, task form, priority selector, show/hide done tasks toggle, and task list container.
-  - `public/style.css`: Modern, clean CSS using CSS custom properties (variables) with Dark theme defaults on `:root` and Light theme overrides on `[data-theme="light"]`, Flexbox, top bar link styles, user pill styling, responsive layout.
+  - `public/index.html`: Accessible semantic markup with top bar external navigation links (GitHub and Backend API), theme toggle button (`#themeToggleBtn`), clickable username button (`#switchUserBtn` / `#currentUserName`), task form, priority selector, show/hide done tasks toggle, and task list container.
+  - `public/style.css`: Modern, clean CSS using CSS custom properties (variables) with Dark theme defaults on `:root` and Light theme overrides on `[data-theme="light"]`, Flexbox, top bar link/pill styles, responsive layout.
   - `public/app.js`: Client-side logic managing `currentUserId` and theme (`taskManagerTheme`, defaulting to `'dark'`), attaching both `X-User-Id` header and `?userId=<userId>` query parameter on all requests with `cache: 'no-store'`, handling user switching, task creation, priority changing, completion toggling, filtering, rendering cards, and handling deletions. Dynamically targets staging backend `https://task-manager-staging-289332143182.us-central1.run.app` when deployed on Vercel preview or staging domains, and targets production backend `https://task-manager-289332143182.us-central1.run.app` when deployed on production. Configures the top-bar Backend API link accordingly. Provides descriptive error handling and diagnostic reporting if the backend cannot be reached.
   - `vercel.json`: Vercel project configuration linking `public/` directory and proxying `/api/*` to the appropriate Cloud Run service.
 - **State Handling**:
